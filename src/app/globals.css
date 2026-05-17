@@ -67,7 +67,7 @@
 }
 
 .article-content {
-  @apply prose prose-lg max-w-none;
+  @apply max-w-none;
 }
 
 .article-content h1 {
