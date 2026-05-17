@@ -1,12 +1,27 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Search, BookOpen, Clock, TrendingUp, ArrowRight } from 'lucide-react';
+import { Search, BookOpen, Clock, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateExcerpt } from '@/lib/utils';
+import { autoGenerateArticles } from '@/lib/auto-generate';
+
+// This ensures articles are generated on server start if none exist
+async function ensureArticles() {
+  const supabase = await createClient();
+  const { count } = await supabase.from('articles').select('*', { count: 'exact', head: true });
+  
+  if (count === 0 || count < 5) {
+    console.log('[Home] Few articles found, generating more...');
+    await autoGenerateArticles(10);
+  }
+}
 
 export default async function HomePage() {
+  // Auto-generate articles if needed
+  await ensureArticles();
+
   const supabase = await createClient();
 
   const { data: featuredArticles } = await supabase
@@ -109,10 +124,11 @@ export default async function HomePage() {
           ) : (
             <div className="text-center py-12">
               <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-              <p className="mt-4 text-muted-foreground">No articles yet. Be the first to contribute!</p>
-              <Link href="/editor/new">
-                <Button className="mt-4">Create Article</Button>
-              </Link>
+              <p className="mt-4 text-muted-foreground">No articles yet. Generating...</p>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <Sparkles className="h-5 w-5 text-accent animate-pulse" />
+                <span className="text-sm text-muted-foreground">AI is creating articles for you</span>
+              </div>
             </div>
           )}
         </div>
