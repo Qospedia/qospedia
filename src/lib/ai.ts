@@ -1,6 +1,6 @@
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-async function callGroq(prompt: string, systemPrompt?: string): Promise<string> {
+export async function callGroq(prompt: string, systemPrompt?: string): Promise<string> {
   if (!GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY is not configured');
   }
