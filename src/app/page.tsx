@@ -12,7 +12,8 @@ async function ensureArticles() {
   const supabase = await createClient();
   const { count } = await supabase.from('articles').select('*', { count: 'exact', head: true });
   
-  if (count === 0 || count < 5) {
+  const articleCount = count ?? 0;
+  if (articleCount < 5) {
     console.log('[Home] Few articles found, generating more...');
     await autoGenerateArticles(10);
   }
