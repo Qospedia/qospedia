@@ -1,27 +1,50 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [status, setStatus] = useState('Processing...');
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session }, error }: any) => {
-      if (error || !session) {
-        setStatus('Redirecting to login...');
-        setTimeout(() => router.push('/auth/login'), 2000);
-      } else {
+    
+    // Check for error in URL
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    
+    if (error) {
+      setStatus(`Error: ${errorDescription || error}`);
+      setTimeout(() => router.push('/auth/login'), 3000);
+      return;
+    }
+
+    // Exchange code for session
+    const exchangeCodeForSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        setStatus('Error: ' + error.message);
+        setTimeout(() => router.push('/auth/login'), 3000);
+        return;
+      }
+
+      if (session) {
         setStatus('Success! Redirecting...');
         router.push('/');
         router.refresh();
+      } else {
+        setStatus('Session not found. Please try again.');
+        setTimeout(() => router.push('/auth/login'), 3000);
       }
-    });
-  }, [router]);
+    };
+
+    exchangeCodeForSession();
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

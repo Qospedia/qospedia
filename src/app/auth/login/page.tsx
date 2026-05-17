@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://qospedia.vercel.app';
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -25,11 +27,10 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
     if (error) {
-      // Check if email is not confirmed
       if (error.message.toLowerCase().includes('email not confirmed')) {
         toast({ 
           title: 'Email Not Verified', 
-          description: 'Please check your email and click the verification link, or resend the verification email.',
+          description: 'Please check your email and click the verification link.',
           variant: 'destructive',
         });
       } else {
@@ -51,8 +52,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { 
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        redirectTo: `${SITE_URL}/auth/callback`,
       },
     });
     if (error) {
@@ -70,7 +70,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${SITE_URL}/auth/callback` },
     });
     
     if (error) {
@@ -108,12 +108,8 @@ export default function LoginPage() {
           </form>
           
           <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-sm text-center text-muted-foreground mb-3">
-              Didn't receive verification email?
-            </p>
-            <Button type="button" variant="ghost" size="sm" onClick={handleResendVerification} className="w-full">
-              Resend Verification Email
-            </Button>
+            <p className="text-sm text-center text-muted-foreground mb-3">Didn't receive verification email?</p>
+            <Button type="button" variant="ghost" size="sm" onClick={handleResendVerification} className="w-full">Resend Verification</Button>
           </div>
           
           <div className="mt-4 text-center text-sm">

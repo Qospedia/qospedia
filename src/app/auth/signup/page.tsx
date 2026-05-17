@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://qospedia.vercel.app';
+
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -29,7 +31,7 @@ export default function SignupPage() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${SITE_URL}/auth/callback`,
       },
     });
 
@@ -37,11 +39,10 @@ export default function SignupPage() {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       setLoading(false);
     } else if (data.user) {
-      // Email confirmation required
       setEmailSent(true);
       toast({ 
         title: 'Verification Email Sent', 
-        description: 'Please check your email and click the confirmation link to activate your account.',
+        description: 'Please check your email and click the confirmation link.',
       });
     }
   };
@@ -52,8 +53,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { 
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        redirectTo: `${SITE_URL}/auth/callback`,
       },
     });
     if (error) {
@@ -72,7 +72,7 @@ export default function SignupPage() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-muted-foreground mb-4">
-              Click the link in the email to verify your account. If you don't see the email, check your spam folder.
+              Click the link in the email to verify your account.
             </p>
             <Link href="/auth/login">
               <Button variant="outline">Back to Login</Button>
@@ -111,7 +111,6 @@ export default function SignupPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="mt-1" />
             </div>
-            <p className="text-xs text-muted-foreground">By signing up, you agree to receive a verification email.</p>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Creating...' : 'Sign Up'}</Button>
           </form>
           <div className="mt-4 text-center text-sm">
