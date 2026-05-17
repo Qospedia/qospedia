@@ -15,7 +15,7 @@ async function ensureArticles() {
   const articleCount = count ?? 0;
   if (articleCount < 5) {
     console.log('[Home] Few articles found, generating more...');
-    await autoGenerateArticles(10);
+    await autoGenerateBulk(10);
   }
 }
 
