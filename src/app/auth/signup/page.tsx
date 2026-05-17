@@ -17,18 +17,32 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       setLoading(false);
-    } else {
-      toast({ title: 'Success', description: 'Check your email to confirm!' });
-      router.push('/auth/login');
+    } else if (data.user) {
+      // Email confirmation required
+      setEmailSent(true);
+      toast({ 
+        title: 'Verification Email Sent', 
+        description: 'Please check your email and click the confirmation link to activate your account.',
+      });
     }
   };
 
@@ -37,13 +51,37 @@ export default function SignupPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { 
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      },
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       setGoogleLoading(false);
     }
   };
+
+  if (emailSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center py-12 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="font-serif text-2xl text-green-600">Check Your Email!</CardTitle>
+            <CardDescription>We sent a verification link to {email}</CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-muted-foreground mb-4">
+              Click the link in the email to verify your account. If you don't see the email, check your spam folder.
+            </p>
+            <Link href="/auth/login">
+              <Button variant="outline">Back to Login</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
@@ -73,6 +111,7 @@ export default function SignupPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="mt-1" />
             </div>
+            <p className="text-xs text-muted-foreground">By signing up, you agree to receive a verification email.</p>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Creating...' : 'Sign Up'}</Button>
           </form>
           <div className="mt-4 text-center text-sm">

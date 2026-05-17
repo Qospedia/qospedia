@@ -21,11 +21,25 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      // Check if email is not confirmed
+      if (error.message.toLowerCase().includes('email not confirmed')) {
+        toast({ 
+          title: 'Email Not Verified', 
+          description: 'Please check your email and click the verification link, or resend the verification email.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      }
       setLoading(false);
-    } else {
+      return;
+    }
+
+    if (data.user) {
       router.push('/');
       router.refresh();
     }
@@ -36,11 +50,33 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { 
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      },
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       setGoogleLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      toast({ title: 'Error', description: 'Please enter your email first', variant: 'destructive' });
+      return;
+    }
+    const supabase = createClient();
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Success', description: 'Verification email resent!' });
     }
   };
 
@@ -70,6 +106,16 @@ export default function LoginPage() {
             </div>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</Button>
           </form>
+          
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-sm text-center text-muted-foreground mb-3">
+              Didn't receive verification email?
+            </p>
+            <Button type="button" variant="ghost" size="sm" onClick={handleResendVerification} className="w-full">
+              Resend Verification Email
+            </Button>
+          </div>
+          
           <div className="mt-4 text-center text-sm">
             <span className="text-muted-foreground">Don&apos;t have an account? </span>
             <Link href="/auth/signup" className="text-accent hover:underline">Sign up</Link>
