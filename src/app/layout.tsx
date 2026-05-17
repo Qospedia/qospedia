@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Playfair_Display, Source_Serif_4 } from 'next/font/google';
-import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { ToastProvider } from '@/components/ui/toast';
 import { Providers } from '@/components/providers';
+import { ThemeProvider, Navbar } from '@/components/layout/header';
 import './globals.css';
 
 const playfair = Playfair_Display({
@@ -40,10 +40,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${playfair.variable} ${sourceSerif.variable} min-h-screen flex flex-col`}>
         <Providers>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <ToastProvider />
+          <ThemeProvider>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <ToastProvider />
+          </ThemeProvider>
         </Providers>
       </body>
     </html>

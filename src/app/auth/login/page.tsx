@@ -10,8 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://qospedia.vercel.app';
-
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -27,20 +25,13 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
     if (error) {
-      if (error.message.toLowerCase().includes('email not confirmed')) {
-        toast({ 
-          title: 'Email Not Verified', 
-          description: 'Please check your email and click the verification link.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      }
+      toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
       setLoading(false);
       return;
     }
 
     if (data.user) {
+      toast({ title: 'Success', description: 'Welcome back!' });
       router.push('/');
       router.refresh();
     }
@@ -52,7 +43,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { 
-        redirectTo: `${SITE_URL}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
     if (error) {
@@ -61,31 +52,12 @@ export default function LoginPage() {
     }
   };
 
-  const handleResendVerification = async () => {
-    if (!email) {
-      toast({ title: 'Error', description: 'Please enter your email first', variant: 'destructive' });
-      return;
-    }
-    const supabase = createClient();
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: { emailRedirectTo: `${SITE_URL}/auth/callback` },
-    });
-    
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Success', description: 'Verification email resent!' });
-    }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="font-serif text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your Qospedia account</CardDescription>
+          <CardDescription>Sign in to Qospedia</CardDescription>
         </CardHeader>
         <CardContent>
           <Button type="button" variant="outline" className="w-full mb-4" onClick={handleGoogleLogin} disabled={googleLoading}>
@@ -106,12 +78,6 @@ export default function LoginPage() {
             </div>
             <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</Button>
           </form>
-          
-          <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-sm text-center text-muted-foreground mb-3">Didn't receive verification email?</p>
-            <Button type="button" variant="ghost" size="sm" onClick={handleResendVerification} className="w-full">Resend Verification</Button>
-          </div>
-          
           <div className="mt-4 text-center text-sm">
             <span className="text-muted-foreground">Don&apos;t have an account? </span>
             <Link href="/auth/signup" className="text-accent hover:underline">Sign up</Link>

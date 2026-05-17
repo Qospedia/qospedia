@@ -10,8 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://qospedia.vercel.app';
-
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -19,7 +17,6 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +28,7 @@ export default function SignupPage() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${SITE_URL}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -39,11 +36,8 @@ export default function SignupPage() {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
       setLoading(false);
     } else if (data.user) {
-      setEmailSent(true);
-      toast({ 
-        title: 'Verification Email Sent', 
-        description: 'Please check your email and click the confirmation link.',
-      });
+      toast({ title: 'Success', description: 'Account created! You can now sign in.' });
+      router.push('/auth/login');
     }
   };
 
@@ -53,7 +47,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { 
-        redirectTo: `${SITE_URL}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
     if (error) {
@@ -62,37 +56,16 @@ export default function SignupPage() {
     }
   };
 
-  if (emailSent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center py-12 px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="font-serif text-2xl text-green-600">Check Your Email!</CardTitle>
-            <CardDescription>We sent a verification link to {email}</CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-muted-foreground mb-4">
-              Click the link in the email to verify your account.
-            </p>
-            <Link href="/auth/login">
-              <Button variant="outline">Back to Login</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="font-serif text-2xl">Create Account</CardTitle>
-          <CardDescription>Join the Qospedia community</CardDescription>
+          <CardDescription>Join Qospedia</CardDescription>
         </CardHeader>
         <CardContent>
           <Button type="button" variant="outline" className="w-full mb-4" onClick={handleGoogleSignup} disabled={googleLoading}>
-            {googleLoading ? 'Signing up...' : 'Sign up with Google'}
+            {googleLoading ? 'Signing up...' : 'Continue with Google'}
           </Button>
           <div className="relative mb-4">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
