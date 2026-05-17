@@ -1,15 +1,14 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { Search as SearchIcon, FileText, Sparkles, Loader2 } from 'lucide-react';
+import { Search as SearchIcon, FileText, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateExcerpt, slugify } from '@/lib/utils';
-import { toast } from '@/components/ui/use-toast';
+import { generateExcerpt } from '@/lib/utils';
 
 interface SearchPageProps {
-  searchParams: Promise<{ q?: string; generate?: string }>;
+  searchParams: Promise<{ q?: string }>;
 }
 
 export async function generateMetadata({ searchParams }: SearchPageProps) {
@@ -52,11 +51,10 @@ async function SearchResults({ query }: { query: string }) {
                         {article.categories?.slice(0, 2).map((cat: any) => (
                           <span key={cat.id} className="bg-secondary px-2 py-0.5 rounded text-xs">{cat.name}</span>
                         ))}
-                        {article.author?.full_name && <span>by {article.author.full_name}</span>}
                       </div>
                       <p className="mt-3 text-muted-foreground line-clamp-2">{article.summary || generateExcerpt(article.content)}</p>
                     </div>
-                    <FileText className="h-6 w-6 text-muted-foreground flex-shrink-0" />
+                    <FileText className="h-6 w-6 text-muted-foreground" />
                   </div>
                 </CardContent>
               </Card>
@@ -67,37 +65,13 @@ async function SearchResults({ query }: { query: string }) {
     );
   }
 
-  // Try to find a close match or suggest browsing
-  const allArticles = await supabase.from('articles').select('title, slug').eq('status', 'published').limit(10);
-  const suggestions = allArticles.data?.slice(0, 5) || [];
-
   return (
     <div className="text-center py-8">
       <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
       <p className="text-muted-foreground mb-4">No articles found for "{query}"</p>
-      <p className="text-sm text-muted-foreground mb-6">We're working on adding more content. Check back soon!</p>
-      
-      {suggestions.length > 0 && (
-        <div className="max-w-md mx-auto">
-          <p className="text-sm font-medium mb-3">You might be interested in:</p>
-          <div className="space-y-2">
-            {suggestions.map((a) => (
-              <Link key={a.slug} href={`/article/${a.slug}`} className="block">
-                <Card className="hover:shadow-md transition-all">
-                  <CardContent className="p-4 text-left">
-                    <span className="text-foreground hover:text-accent">{a.title}</span>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-8 flex justify-center gap-4">
-        <Link href="/categories"><Button variant="outline">Browse Categories</Button></Link>
-        <Link href="/recent"><Button variant="outline">Recent Articles</Button></Link>
-      </div>
+      <Link href="/setup">
+        <Button variant="outline">Generate Articles</Button>
+      </Link>
     </div>
   );
 }
@@ -121,7 +95,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
         </form>
 
-        {query && (
+        {query ? (
           <Suspense fallback={
             <div className="text-center py-12">
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-accent" />
@@ -130,16 +104,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           }>
             <SearchResults query={query} />
           </Suspense>
-        )}
-
-        {!query && (
+        ) : (
           <div className="text-center py-12">
             <SearchIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-muted-foreground">Enter a search term to find articles</p>
-            <div className="mt-8 flex justify-center gap-4">
-              <Link href="/categories"><Button variant="outline">Browse Categories</Button></Link>
-              <Link href="/recent"><Button variant="outline">Recent Articles</Button></Link>
-            </div>
+            <p className="mt-4 text-muted-foreground">Enter a search term</p>
           </div>
         )}
       </div>
