@@ -106,7 +106,7 @@ export async function autoGenerateArticles(limit = 5): Promise<{ success: boolea
 
       const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const lines = content.split('\n');
-      const firstLine = lines.find(l => l.trim() && !l.startsWith('#')) || '';
+      const firstLine = lines.find((l: string) => l.trim() && !l.startsWith('#')) || '';
       const summary = firstLine.slice(0, 200);
 
       const { error } = await supabase.from('articles').insert({
