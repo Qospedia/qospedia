@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { generateExcerpt } from '@/lib/utils';
-import { autoGenerateArticles } from '@/lib/auto-generate';
+import { autoGenerateArticles, autoGenerateBulk } from '@/lib/auto-generate';
 
 // This ensures articles are generated on server start if none exist
 async function ensureArticles() {
