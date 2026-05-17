@@ -113,36 +113,36 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </div>
           </header>
 
-          <div className="article-content mb-12">
+          <div className="mb-12">
             {article.content.split('\n').map((paragraph: string, idx: number) => {
               if (paragraph.startsWith('# ')) {
-                return <h1 key={idx}>{paragraph.replace('# ', '')}</h1>;
+                return <h1 key={idx} style={{ fontSize: '1.875rem', fontWeight: 'bold', fontFamily: 'Georgia, serif', color: '#1e3a5f', marginTop: '2rem', marginBottom: '1rem' }}>{paragraph.replace('# ', '')}</h1>;
               }
               if (paragraph.startsWith('## ')) {
-                return <h2 key={idx}>{paragraph.replace('## ', '')}</h2>;
+                return <h2 key={idx} style={{ fontSize: '1.5rem', fontWeight: '600', fontFamily: 'Georgia, serif', color: '#1e3a5f', marginTop: '1.5rem', marginBottom: '0.75rem' }}>{paragraph.replace('## ', '')}</h2>;
               }
               if (paragraph.startsWith('### ')) {
-                return <h3 key={idx}>{paragraph.replace('### ', '')}</h3>;
+                return <h3 key={idx} style={{ fontSize: '1.25rem', fontWeight: '600', fontFamily: 'Georgia, serif', color: '#1e3a5f', marginTop: '1rem', marginBottom: '0.5rem' }}>{paragraph.replace('### ', '')}</h3>;
               }
               if (paragraph.trim() === '') {
                 return <br key={idx} />;
               }
               if (paragraph.startsWith('- ') || paragraph.startsWith('* ')) {
-                return <li key={idx}>{paragraph.replace(/^[*-] /, '')}</li>;
+                return <li key={idx} style={{ marginBottom: '0.5rem', marginLeft: '1.5rem' }}>{paragraph.replace(/^[*-] /, '')}</li>;
               }
               if (paragraph.match(/^\d+\./)) {
-                return <li key={idx}>{paragraph.replace(/^\d+\.\s/, '')}</li>;
+                return <li key={idx} style={{ marginBottom: '0.5rem', marginLeft: '1.5rem' }}>{paragraph.replace(/^\d+\.\s/, '')}</li>;
               }
               if (paragraph.startsWith('> ')) {
-                return <blockquote key={idx}>{paragraph.replace('> ', '')}</blockquote>;
+                return <blockquote key={idx} style={{ borderLeft: '4px solid #e07a5f', paddingLeft: '1rem', fontStyle: 'italic', color: '#6b7280', margin: '1rem 0' }}>{paragraph.replace('> ', '')}</blockquote>;
               }
               if (paragraph.startsWith('```')) {
                 return null;
               }
               return paragraph.startsWith('http') ? (
-                <a key={idx} href={paragraph} target="_blank" rel="noopener noreferrer">{paragraph}</a>
+                <a key={idx} href={paragraph} target="_blank" rel="noopener noreferrer" style={{ color: '#e07a5f', textDecoration: 'underline' }}>{paragraph}</a>
               ) : (
-                <p key={idx}>{paragraph}</p>
+                <p key={idx} style={{ fontSize: '1.125rem', lineHeight: '1.75', color: 'var(--foreground)', marginBottom: '1rem' }}>{paragraph}</p>
               );
             })}
           </div>

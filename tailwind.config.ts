@@ -14,11 +14,15 @@ const config: Config = {
         foreground: 'var(--foreground)',
         primary: {
           DEFAULT: '#1e3a5f',
-          foreground: '#fefae0',
+          foreground: '#fdfbf7',
+        },
+        secondary: {
+          DEFAULT: '#f5f0dc',
+          foreground: '#1e3a5f',
         },
         accent: {
           DEFAULT: '#e07a5f',
-          foreground: '#fefae0',
+          foreground: '#fdfbf7',
         },
         card: {
           DEFAULT: '#fefae0',
@@ -30,7 +34,7 @@ const config: Config = {
         },
         destructive: {
           DEFAULT: '#dc2626',
-          foreground: '#fefae0',
+          foreground: '#fdfbf7',
         },
         border: '#e5dfd0',
         input: '#e5dfd0',

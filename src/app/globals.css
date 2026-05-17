@@ -49,77 +49,18 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground font-serif antialiased;
-    font-family: var(--font-source);
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-source), Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-playfair);
+    font-family: var(--font-playfair), Georgia, serif;
   }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-
-.article-content {
-  @apply max-w-none;
-}
-
-.article-content h1 {
-  @apply text-3xl font-bold font-serif text-primary mt-8 mb-4;
-}
-
-.article-content h2 {
-  @apply text-2xl font-semibold font-serif text-primary mt-6 mb-3;
-}
-
-.article-content h3 {
-  @apply text-xl font-semibold font-serif text-primary mt-4 mb-2;
-}
-
-.article-content p {
-  @apply text-lg leading-relaxed mb-4;
-}
-
-.article-content a {
-  @apply text-accent hover:underline;
-}
-
-.article-content ul, .article-content ol {
-  @apply mb-4 pl-6;
-}
-
-.article-content li {
-  @apply mb-2;
-}
-
-.article-content ul li {
-  @apply list-disc;
-}
-
-.article-content ol li {
-  @apply list-decimal;
-}
-
-.article-content blockquote {
-  @apply border-l-4 border-accent pl-4 italic text-muted-foreground my-4;
-}
-
-.article-content code {
-  @apply bg-secondary px-1.5 py-0.5 rounded text-sm font-mono;
-}
-
-.article-content pre {
-  @apply bg-secondary p-4 rounded-lg overflow-x-auto my-4;
-}
-
-.article-content pre code {
-  @apply bg-transparent p-0;
 }
 
 @keyframes fadeIn {
