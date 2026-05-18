@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Search, Menu, X, User, Plus, LogOut, Settings, LayoutDashboard, Sun, Moon } from 'lucide-react';
+import { Menu, X, User, Plus, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchBar } from '@/components/ui/search-bar';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
@@ -39,7 +39,11 @@ export function ThemeToggle() {
       onClick={toggle} 
       className="text-[#636363] hover:bg-[rgba(5,5,5,0.05)] hover:text-[#050505] dark:text-[#858585] dark:hover:bg-[rgba(252,252,252,0.1)] dark:hover:text-[#FCFCFC]"
     >
-      {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      {isDark ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      )}
     </Button>
   );
 }
@@ -47,10 +51,10 @@ export function ThemeToggle() {
 export function Navbar() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const isHomepage = pathname === '/';
 
   useEffect(() => {
     const supabase = createClient();
@@ -62,13 +66,6 @@ export function Navbar() {
       }
     });
   }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
-    }
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-[#FCFCFC] dark:bg-[#050505] border-b border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
@@ -93,19 +90,24 @@ export function Navbar() {
           </nav>
         </div>
 
+        {!isHomepage && (
+          <div className="hidden lg:flex flex-1 max-w-xl mx-8">
+            <SearchBar showVoice className="w-full" />
+          </div>
+        )}
+
         <div className="flex items-center gap-3">
-          <form onSubmit={handleSearch} className="hidden lg:flex items-center">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#858585] dark:text-[#636363]" />
-              <Input 
-                type="search" 
-                placeholder="Search..." 
-                className="w-64 pl-9 pr-4 bg-[#F7F7F7] dark:bg-[#1A1A1A] text-[#050505] dark:text-[#FCFCFC] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] placeholder:text-[#858585] dark:placeholder:text-[#636363]" 
-                value={searchQuery} 
-                onChange={(e) => setSearchQuery(e.target.value)} 
-              />
+          {isHomepage && (
+            <div className="hidden lg:block">
+              <SearchBar showVoice className="w-80" />
             </div>
-          </form>
+          )}
+          
+          <Link href="/suggest">
+            <Button variant="ghost" size="sm" className="text-[#636363] dark:text-[#858585] hover:bg-[rgba(5,5,5,0.05)] dark:hover:bg-[rgba(252,252,252,0.1)] hidden md:flex">
+              Suggest
+            </Button>
+          </Link>
 
           <ThemeToggle />
 
@@ -122,20 +124,20 @@ export function Navbar() {
                   </div>
                   <div className="p-1">
                     {profile?.role === 'editor' || profile?.role === 'admin' ? (
-                      <Link href="/editor/new" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]">
+                      <Link href="/editor/new" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]" onClick={() => setIsDropdownOpen(false)}>
                         <Plus className="h-4 w-4" />New Article
                       </Link>
                     ) : null}
-                    <Link href="/profile" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]">
+                    <Link href="/profile" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]" onClick={() => setIsDropdownOpen(false)}>
                       <User className="h-4 w-4" />Profile
                     </Link>
                     {(profile?.role === 'editor' || profile?.role === 'admin') && (
-                      <Link href="/dashboard" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]">
+                      <Link href="/dashboard" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]" onClick={() => setIsDropdownOpen(false)}>
                         <LayoutDashboard className="h-4 w-4" />Dashboard
                       </Link>
                     )}
                     {profile?.role === 'admin' && (
-                      <Link href="/admin" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]">
+                      <Link href="/admin" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]" onClick={() => setIsDropdownOpen(false)}>
                         <Settings className="h-4 w-4" />Admin
                       </Link>
                     )}
@@ -162,17 +164,17 @@ export function Navbar() {
       {isMenuOpen && (
         <div className="md:hidden border-t border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#FCFCFC] dark:bg-[#050505] p-4">
           <nav className="flex flex-col gap-4">
-            <form onSubmit={handleSearch} className="flex items-center">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#858585] dark:text-[#636363]" />
-                <Input type="search" placeholder="Search..." className="w-full pl-9 bg-[#F7F7F7] dark:bg-[#1A1A1A] text-[#050505] dark:text-[#FCFCFC] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] placeholder:text-[#858585] dark:placeholder:text-[#636363]" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              </div>
-            </form>
+            <div className="w-full">
+              <SearchBar showVoice autoFocus />
+            </div>
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} className="text-[14px] font-medium text-[#636363] dark:text-[#858585] hover:text-[#050505] dark:hover:text-[#FCFCFC]" onClick={() => setIsMenuOpen(false)}>
                 {link.label}
               </Link>
             ))}
+            <Link href="/suggest" className="text-[14px] font-medium text-[#636363] dark:text-[#858585] hover:text-[#050505] dark:hover:text-[#FCFCFC]" onClick={() => setIsMenuOpen(false)}>
+              Suggest
+            </Link>
           </nav>
         </div>
       )}

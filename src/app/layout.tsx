@@ -35,6 +35,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (theme === 'dark' || (!theme && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={`${playfair.variable} min-h-screen flex flex-col bg-[#FCFCFC] dark:bg-[#050505] text-[#050505] dark:text-[#FCFCFC]`}>
         <Providers>
           <main className="flex-1">{children}</main>

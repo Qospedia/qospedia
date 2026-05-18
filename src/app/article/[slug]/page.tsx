@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Clock, Eye, Edit, ThumbsUp } from 'lucide-react';
+import { Clock, Eye, Edit, ThumbsUp, ExternalLink, BookOpen, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,186 @@ import { formatDate, generateExcerpt } from '@/lib/utils';
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
+}
+
+function parseContent(content: string) {
+  const elements: React.ReactNode[] = [];
+  const lines = content.split('\n');
+  let tableRows: string[][] = [];
+  let inTable = false;
+  let inList: string[] = [];
+  
+  const flushList = () => {
+    if (inList.length > 0) {
+      elements.push(
+        <ul key={`list-${elements.length}`} className="list-disc pl-6 space-y-1 mb-4">
+          {inList.map((item, i) => (
+            <li key={i} className="text-[14px] leading-[24px] text-[#050505] dark:text-[#CCCCCC]">{item}</li>
+          ))}
+        </ul>
+      );
+      inList = [];
+    }
+  };
+
+  const flushTable = () => {
+    if (tableRows.length > 0) {
+      elements.push(
+        <div key={`table-${elements.length}`} className="overflow-x-auto my-6">
+          <table className="w-full border-collapse border border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
+            <thead>
+              <tr className="bg-[#F7F7F7] dark:bg-[#1A1A1A]">
+                {tableRows[0].map((cell, i) => (
+                  <th key={i} className="border border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] px-4 py-2 text-left text-[14px] font-semibold text-[#050505] dark:text-[#FCFCFC]">{cell}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableRows.slice(1).map((row, ri) => (
+                <tr key={ri} className={ri % 2 === 0 ? 'bg-white dark:bg-[#0A0A0A]' : 'bg-[#F7F7F7] dark:bg-[#1A1A1A]'}>
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="border border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] px-4 py-2 text-[14px] text-[#050505] dark:text-[#CCCCCC]">{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      tableRows = [];
+      inTable = false;
+    }
+  };
+
+  lines.forEach((line, idx) => {
+    const trimmed = line.trim();
+    
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      inTable = true;
+      flushList();
+      const cells = trimmed.split('|').filter(c => c.trim()).map(c => c.trim());
+      tableRows.push(cells);
+      return;
+    }
+    
+    if (inTable && !trimmed.startsWith('|')) {
+      flushTable();
+    }
+    
+    if (trimmed === '') {
+      flushList();
+      elements.push(<div key={idx} className="h-2" />);
+      return;
+    }
+    
+    if (trimmed.startsWith('# ')) {
+      flushList();
+      const text = trimmed.replace('# ', '');
+      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      elements.push(
+        <h2 key={idx} id={id} className="text-[22px] font-semibold text-[#050505] dark:text-[#FCFCFC] mt-8 mb-4 scroll-mt-20">
+          <a href={`#${id}`} className="hover:text-[#2563EB]">{text}</a>
+        </h2>
+      );
+      return;
+    }
+    
+    if (trimmed.startsWith('## ')) {
+      flushList();
+      const text = trimmed.replace('## ', '');
+      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      elements.push(
+        <h3 key={idx} id={id} className="text-[18px] font-semibold text-[#050505] dark:text-[#FCFCFC] mt-6 mb-3 scroll-mt-20">
+          <a href={`#${id}`} className="hover:text-[#2563EB]">{text}</a>
+        </h3>
+      );
+      return;
+    }
+    
+    if (trimmed.startsWith('### ')) {
+      flushList();
+      const text = trimmed.replace('### ', '');
+      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      elements.push(
+        <h4 key={idx} id={id} className="text-[16px] font-semibold text-[#050505] dark:text-[#FCFCFC] mt-4 mb-2 scroll-mt-20">
+          <a href={`#${id}`} className="hover:text-[#2563EB]">{text}</a>
+        </h4>
+      );
+      return;
+    }
+    
+    if (trimmed.startsWith('![')) {
+      const altMatch = trimmed.match(/!\[([^\]]*)\]/);
+      const srcMatch = trimmed.match(/\((https?:\/\/[^\)]+)\)/);
+      if (altMatch && srcMatch) {
+        elements.push(
+          <figure key={idx} className="my-6">
+            <img 
+              src={srcMatch[1]} 
+              alt={altMatch[1]} 
+              className="max-w-full rounded-lg"
+            />
+            {altMatch[1] && (
+              <figcaption className="text-[12px] text-[#858585] dark:text-[#636363] mt-2 text-center">
+                {altMatch[1]}
+              </figcaption>
+            )}
+          </figure>
+        );
+        return;
+      }
+    }
+    
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      inList.push(trimmed.replace(/^[*-] /, ''));
+      return;
+    }
+    
+    if (trimmed.match(/^\d+\./)) {
+      inList.push(trimmed.replace(/^\d+\.\s*/, ''));
+      return;
+    }
+    
+    if (trimmed.startsWith('> ')) {
+      flushList();
+      elements.push(
+        <blockquote key={idx} className="border-l-4 border-[#2563EB] pl-4 py-2 my-4 text-[#636363] dark:text-[#858585] italic bg-[#F7F7F7] dark:bg-[#1A1A1A] rounded-r-lg">
+          {trimmed.replace('> ', '')}
+        </blockquote>
+      );
+      return;
+    }
+    
+    if (trimmed.startsWith('```')) {
+      return;
+    }
+    
+    flushList();
+    
+    let processedLine = trimmed;
+    
+    processedLine = processedLine.replace(/\[\[([^\]]+)\]\]/g, (_, content) => {
+      const parts = content.split('|');
+      const linkText = parts[1] || parts[0];
+      const linkTarget = parts[0];
+      return `<a href="/article/${linkTarget.toLowerCase().replace(/[^a-z0-9]+/g, '-')}" class="text-[#2563EB] hover:underline">${linkText}</a>`;
+    });
+    
+    processedLine = processedLine.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#2563EB] hover:underline flex items-center gap-1">$1<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg></a>');
+    
+    elements.push(
+      <p 
+        key={idx} 
+        className="text-[14px] leading-[26px] text-[#050505] dark:text-[#CCCCCC] mb-4"
+        dangerouslySetInnerHTML={{ __html: processedLine }}
+      />
+    );
+  });
+  
+  flushList();
+  flushTable();
+  
+  return elements;
 }
 
 export async function generateMetadata({ params }: ArticlePageProps) {
@@ -37,7 +217,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   const { data: article, error } = await supabase
     .from('articles')
-    .select('id, title, slug, summary, content, view_count, published_at, created_at, author_id')
+    .select('id, title, slug, summary, content, view_count, published_at, created_at, author_id, category_id, tags')
     .eq('slug', slug)
     .eq('status', 'published')
     .single();
@@ -64,89 +244,87 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     .neq('id', article.id)
     .limit(3);
 
+  const { data: category } = article.category_id 
+    ? await supabase.from('categories').select('name, slug').eq('id', article.category_id).single()
+    : { data: null };
+
+  const tags = article.tags || [];
+
   return (
-    <div className="min-h-screen py-12 px-4">
+    <div className="min-h-screen py-8 px-4 bg-[#FCFCFC] dark:bg-[#050505]">
       <div className="container mx-auto max-w-4xl">
-        <article>
-          <header className="mb-8">
-            <h1 className="text-[32px] font-semibold text-[#050505] mb-4 tracking-tight">
+        <article className="prose prose-slate dark:prose-invert max-w-none">
+          <header className="mb-8 pb-6 border-b border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
+            {category && (
+              <Link href={`/categories/${category.slug}`} className="inline-flex items-center gap-1.5 text-[13px] text-[#2563EB] hover:underline mb-3">
+                <Tag className="h-3.5 w-3.5" />
+                {category.name}
+              </Link>
+            )}
+            
+            <h1 className="text-[32px] font-semibold text-[#050505] dark:text-[#FCFCFC] mb-4 tracking-tight leading-tight">
               {article.title}
             </h1>
 
             {article.summary && (
-              <p className="text-[16px] text-[#636363] mb-6 leading-relaxed">
+              <p className="text-[16px] text-[#636363] dark:text-[#858585] mb-6 leading-relaxed">
                 {article.summary}
               </p>
             )}
 
-            <div className="flex flex-wrap items-center gap-6 text-[14px] text-[#858585]">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>Published {article.published_at ? formatDate(article.published_at) : formatDate(article.created_at)}</span>
+            <div className="flex flex-wrap items-center gap-6 text-[13px] text-[#858585] dark:text-[#636363]">
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                <span>{article.published_at ? formatDate(article.published_at) : formatDate(article.created_at)}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
+              <div className="flex items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5" />
                 <span>{article.view_count + 1} views</span>
               </div>
             </div>
           </header>
 
-          <div className="mb-12">
-            {article.content.split('\n').map((paragraph: string, idx: number) => {
-              if (paragraph.startsWith('# ')) {
-                return <h1 key={idx} className="text-[24px] font-semibold text-[#050505] mt-8 mb-4">{paragraph.replace('# ', '')}</h1>;
-              }
-              if (paragraph.startsWith('## ')) {
-                return <h2 key={idx} className="text-[20px] font-semibold text-[#050505] mt-6 mb-3">{paragraph.replace('## ', '')}</h2>;
-              }
-              if (paragraph.startsWith('### ')) {
-                return <h3 key={idx} className="text-[16px] font-semibold text-[#050505] mt-4 mb-2">{paragraph.replace('### ', '')}</h3>;
-              }
-              if (paragraph.trim() === '') {
-                return <br key={idx} />;
-              }
-              if (paragraph.startsWith('- ') || paragraph.startsWith('* ')) {
-                return <li key={idx} className="mb-2 ml-6 text-[#050505]">{paragraph.replace(/^[*-] /, '')}</li>;
-              }
-              if (paragraph.match(/^\d+\./)) {
-                return <li key={idx} className="mb-2 ml-6 text-[#050505]">{paragraph.replace(/^\d+\.\s/, '')}</li>;
-              }
-              if (paragraph.startsWith('> ')) {
-                return <blockquote key={idx} className="border-l-4 border-[#2563EB] pl-4 italic text-[#636363] my-4">{paragraph.replace('> ', '')}</blockquote>;
-              }
-              if (paragraph.startsWith('```')) {
-                return null;
-              }
-              return paragraph.startsWith('http') ? (
-                <a key={idx} href={paragraph} target="_blank" rel="noopener noreferrer" className="text-[#2563EB] hover:underline block mb-2">{paragraph}</a>
-              ) : (
-                <p key={idx} className="text-[14px] leading-[24px] text-[#050505] mb-4">{paragraph}</p>
-              );
-            })}
+          <div className="article-content">
+            {parseContent(article.content)}
           </div>
 
+          {tags.length > 0 && (
+            <div className="mt-12 pt-6 border-t border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag: string) => (
+                  <span key={tag} className="px-3 py-1.5 text-[13px] bg-[#F7F7F7] dark:bg-[#1A1A1A] text-[#636363] dark:text-[#858585] rounded-full">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {citations && citations.length > 0 && (
-            <Card className="mb-12">
-              <CardHeader>
-                <CardTitle className="text-[16px] font-semibold text-[#050505]">Sources & Citations</CardTitle>
+            <Card className="mt-12 border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#F7F7F7] dark:bg-[#0A0A0A]">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-[16px] font-semibold text-[#050505] dark:text-[#FCFCFC] flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  References
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <ol className="list-decimal pl-5 space-y-2">
-                  {citations.map((citation) => (
-                    <li key={citation.id} className="text-[14px] text-[#050505]">
-                      {citation.source_title}
+                <ol className="list-decimal pl-5 space-y-3">
+                  {citations.map((citation, idx) => (
+                    <li key={citation.id} className="text-[14px] text-[#636363] dark:text-[#858585]">
+                      <span className="text-[#050505] dark:text-[#FCFCFC]">{citation.source_title}</span>
+                      {citation.source_author && <span className="text-[#858585] dark:text-[#636363]"> by {citation.source_author}</span>}
+                      {citation.source_date && <span className="text-[#858585] dark:text-[#636363]">, {citation.source_date}</span>}
                       {citation.source_url && (
                         <a
                           href={citation.source_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[#2563EB] hover:underline ml-1"
+                          className="ml-2 text-[#2563EB] hover:underline inline-flex items-center gap-1"
                         >
-                          [source]
+                          <ExternalLink className="h-3 w-3" />
                         </a>
                       )}
-                      {citation.source_author && <span className="text-[#858585]"> by {citation.source_author}</span>}
-                      {citation.source_date && <span className="text-[#858585]">, {citation.source_date}</span>}
                     </li>
                   ))}
                 </ol>
@@ -155,17 +333,32 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           )}
         </article>
 
+        <div className="mt-8 pt-6 border-t border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
+          <div className="flex items-center justify-between">
+            <Link href="/suggest" className="text-[14px] text-[#2563EB] hover:underline flex items-center gap-1.5">
+              <Edit className="h-4 w-4" />
+              Suggest an edit to this article
+            </Link>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] text-[#636363] dark:text-[#858585] hover:bg-[#F7F7F7] dark:hover:bg-[#1A1A1A]">
+                <ThumbsUp className="h-4 w-4 mr-1.5" />
+                Helpful
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {relatedArticles && relatedArticles.length > 0 && (
-          <section className="mt-12">
-            <h2 className="text-[20px] font-semibold text-[#050505] mb-6">Related Articles</h2>
+          <section className="mt-12 pt-8 border-t border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
+            <h2 className="text-[20px] font-semibold text-[#050505] dark:text-[#FCFCFC] mb-6">Related Articles</h2>
             <div className="grid gap-4 md:grid-cols-3">
               {relatedArticles.map((related) => (
                 <Link key={related.id} href={`/article/${related.slug}`}>
-                  <Card className="transition-all hover:shadow-md hover:-translate-y-1">
+                  <Card className="h-full border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#F7F7F7] dark:bg-[#0A0A0A] hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardContent className="p-4">
-                      <h3 className="font-medium text-[#050505] line-clamp-2 text-[14px]">{related.title}</h3>
+                      <h3 className="font-medium text-[#050505] dark:text-[#FCFCFC] line-clamp-2 text-[14px]">{related.title}</h3>
                       {related.summary && (
-                        <p className="mt-2 text-[14px] text-[#636363] line-clamp-2">
+                        <p className="mt-2 text-[13px] text-[#636363] dark:text-[#858585] line-clamp-2">
                           {related.summary}
                         </p>
                       )}

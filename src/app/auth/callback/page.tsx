@@ -9,34 +9,61 @@ function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('Processing...');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const supabase = createClient();
     
-    const error = searchParams.get('error');
+    const errorParam = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
     
-    if (error) {
-      setStatus(`Error: ${errorDescription || error}`);
+    if (errorParam) {
+      setError(errorDescription || errorParam);
+      setStatus('Authentication failed. Redirecting...');
       setTimeout(() => router.push('/auth/login'), 3000);
       return;
     }
 
     const exchangeCodeForSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        setStatus('Error: ' + error.message);
-        setTimeout(() => router.push('/auth/login'), 3000);
-        return;
-      }
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError(sessionError.message);
+          setStatus('Error getting session. Redirecting...');
+          setTimeout(() => router.push('/auth/login'), 3000);
+          return;
+        }
 
-      if (session) {
-        setStatus('Success! Redirecting...');
-        router.push('/');
-        router.refresh();
-      } else {
-        setStatus('Session not found. Please try again.');
+        if (session) {
+          setStatus('Success! Redirecting...');
+          router.push('/');
+          router.refresh();
+        } else {
+          const code = searchParams.get('code');
+          if (code) {
+            setStatus('Exchanging code for session...');
+            const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            if (exchangeError) {
+              console.error('Code exchange error:', exchangeError);
+              setError(exchangeError.message);
+              setStatus('Error exchanging code. Redirecting...');
+              setTimeout(() => router.push('/auth/login'), 3000);
+            } else if (sessionData?.session) {
+              router.push('/');
+              router.refresh();
+            }
+          } else {
+            setError('No authentication code found');
+            setStatus('No code found. Redirecting...');
+            setTimeout(() => router.push('/auth/login'), 3000);
+          }
+        }
+      } catch (err: any) {
+        console.error('Callback error:', err);
+        setError(err.message || 'An unexpected error occurred');
+        setStatus('Error occurred. Redirecting...');
         setTimeout(() => router.push('/auth/login'), 3000);
       }
     };
@@ -45,28 +72,33 @@ function AuthCallbackContent() {
   }, [router, searchParams]);
 
   return (
-    <div className="text-center">
-      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-accent" />
-      <p className="text-muted-foreground">{status}</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#FCFCFC] dark:bg-[#050505]">
+      <div className="text-center space-y-4">
+        <Loader2 className="h-10 w-10 animate-spin mx-auto text-[#2563EB]" />
+        <p className="text-[16px] text-[#636363] dark:text-[#858585]">{status}</p>
+        {error && (
+          <p className="text-[14px] text-[#EF4444]">Error: {error}</p>
+        )}
+      </div>
     </div>
   );
 }
 
 function LoadingFallback() {
   return (
-    <div className="text-center">
-      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-accent" />
-      <p className="text-muted-foreground">Loading...</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#FCFCFC] dark:bg-[#050505]">
+      <div className="text-center space-y-4">
+        <Loader2 className="h-10 w-10 animate-spin mx-auto text-[#2563EB]" />
+        <p className="text-[16px] text-[#636363] dark:text-[#858585]">Loading...</p>
+      </div>
     </div>
   );
 }
 
 export default function AuthCallbackPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Suspense fallback={<LoadingFallback />}>
-        <AuthCallbackContent />
-      </Suspense>
-    </div>
+    <Suspense fallback={<LoadingFallback />}>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }

@@ -60,12 +60,11 @@ export default function LoginPage() {
     
     try {
       const supabase = createClient();
-      const siteUrl = 'https://qospedia.vercel.app';
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { 
-          redirectTo: `${siteUrl}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       
