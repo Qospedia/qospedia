@@ -100,13 +100,6 @@ export default async function HomePage() {
                 <Link key={article.id} href={`/article/${article.slug}`}>
                   <Card className="h-full transition-all hover:shadow-lg hover:-translate-y-1 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                     <CardHeader>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                        {article.categories?.slice(0, 2).map((cat: any) => (
-                          <span key={cat.id} className="bg-secondary px-2 py-1 rounded">
-                            {cat.name}
-                          </span>
-                        ))}
-                      </div>
                       <CardTitle className="line-clamp-2">{article.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
