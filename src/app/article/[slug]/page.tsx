@@ -69,18 +69,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <div className="container mx-auto px-4 max-w-4xl">
         <article>
           <header className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              {article.categories?.map((cat: any) => (
-                <Link
-                  key={cat.id}
-                  href={`/categories/${cat.slug}`}
-                  className="text-xs bg-secondary text-secondary-foreground px-3 py-1 rounded-full hover:bg-accent/10 hover:text-accent transition-colors"
-                >
-                  {cat.name}
-                </Link>
-              ))}
-            </div>
-
             <h1 className="font-serif text-4xl font-bold text-foreground mb-4">
               {article.title}
             </h1>
