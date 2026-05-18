@@ -80,15 +80,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-[#FCFCFC] dark:bg-[#050505]">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="font-serif text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Sign in to Qospedia</CardDescription>
+          <CardTitle className="text-[20px] font-semibold text-[#050505]">Welcome Back</CardTitle>
+          <CardDescription className="text-[#636363]">Sign in to Qospedia</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive text-destructive text-sm rounded-lg">
+            <div className="mb-4 p-3 bg-[#FEF2F2] border border-[#EF4444] text-[#EF4444] text-[14px] rounded-lg">
               {error}
             </div>
           )}
@@ -98,13 +98,13 @@ export default function LoginPage() {
           </Button>
           
           <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Or</span></div>
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-[#E5E7EB]" /></div>
+            <div className="relative flex justify-center text-[12px]"><span className="bg-[#FCFCFC] px-2 text-[#636363]">Or</span></div>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-[14px] font-medium text-[#050505]">Email</Label>
               <Input 
                 id="email" 
                 type="email" 
@@ -115,7 +115,7 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-[14px] font-medium text-[#050505]">Password</Label>
               <Input 
                 id="password" 
                 type="password" 
@@ -125,14 +125,14 @@ export default function LoginPage() {
                 className="mt-1" 
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
           
-          <div className="mt-4 text-center text-sm">
-            <span className="text-muted-foreground">Don't have an account? </span>
-            <Link href="/auth/signup" className="text-accent hover:underline">Sign up</Link>
+          <div className="mt-4 text-center text-[14px]">
+            <span className="text-[#636363]">Don't have an account? </span>
+            <Link href="/auth/signup" className="text-[#2563EB] hover:underline">Sign up</Link>
           </div>
         </CardContent>
       </Card>

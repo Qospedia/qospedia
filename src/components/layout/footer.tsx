@@ -22,44 +22,50 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-card">
-      <div className="container mx-auto px-4 py-12">
+    <footer className="border-t border-[#E5E7EB] bg-[#FCFCFC]">
+      <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1">
-            <Link href="/" className="font-serif text-2xl font-bold text-primary">Qospedia</Link>
-            <p className="mt-4 text-sm text-muted-foreground">A modern encyclopedia with AI-powered features.</p>
-            <div className="mt-4 text-sm text-muted-foreground">
-              <p><span className="font-medium">Founder:</span> Shaurya Agarwal</p>
-              <p><span className="font-medium">Parent:</span> HALONAI</p>
+            <Link href="/" className="text-[20px] font-semibold text-[#050505] tracking-tight">Qospedia</Link>
+            <p className="mt-4 text-[14px] text-[#636363]">A modern encyclopedia with AI-powered features.</p>
+            <div className="mt-4 text-[14px] text-[#636363]">
+              <p><span className="font-medium text-[#050505]">Founder:</span> Shaurya Agarwal</p>
+              <p><span className="font-medium text-[#050505]">Parent:</span> HALONAI</p>
             </div>
           </div>
           <div>
-            <h4 className="font-medium text-foreground mb-4">Platform</h4>
+            <h4 className="text-[14px] font-medium text-[#050505] mb-4">Platform</h4>
             <ul className="space-y-2">
               {footerLinks.platform.map((link) => (
-                <li key={link.href}><Link href={link.href} className="text-sm text-muted-foreground hover:text-foreground">{link.label}</Link></li>
+                <li key={link.href}><Link href={link.href} className="text-[14px] text-[#636363] hover:text-[#050505]">{link.label}</Link></li>
               ))}
             </ul>
           </div>
           <div>
-            <h4 className="font-medium text-foreground mb-4">Community</h4>
+            <h4 className="text-[14px] font-medium text-[#050505] mb-4">Community</h4>
             <ul className="space-y-2">
               {footerLinks.community.map((link) => (
-                <li key={link.href}><Link href={link.href} className="text-sm text-muted-foreground hover:text-foreground">{link.label}</Link></li>
+                <li key={link.href}><Link href={link.href} className="text-[14px] text-[#636363] hover:text-[#050505]">{link.label}</Link></li>
               ))}
             </ul>
           </div>
           <div>
-            <h4 className="font-medium text-foreground mb-4">Legal</h4>
+            <h4 className="text-[14px] font-medium text-[#050505] mb-4">Legal</h4>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
-                <li key={link.href}><Link href={link.href} className="text-sm text-muted-foreground hover:text-foreground">{link.label}</Link></li>
+                <li key={link.href}><Link href={link.href} className="text-[14px] text-[#636363] hover:text-[#050505]">{link.label}</Link></li>
               ))}
             </ul>
           </div>
         </div>
-        <div className="mt-12 pt-8 border-t border-border">
-          <p className="text-center text-sm text-muted-foreground">© {new Date().getFullYear()} Qospedia. A HALONAI Company.</p>
+        <div className="mt-8 pt-6 border-t border-[#E5E7EB] flex items-center justify-between">
+          <p className="text-[12px] text-[#858585]">© {new Date().getFullYear()} Qospedia. A HALONAI Company.</p>
+          <div className="flex items-center gap-6">
+            <Link href="/terms" className="text-[12px] text-[#858585] hover:text-[#050505]">Terms of Service</Link>
+            <Link href="/privacy" className="text-[12px] text-[#858585] hover:text-[#050505]">Privacy Policy</Link>
+            <Link href="/about" className="text-[12px] text-[#858585] hover:text-[#050505]">About</Link>
+            <Link href="/contact" className="text-[12px] text-[#858585] hover:text-[#050505]">Feedback</Link>
+          </div>
         </div>
       </div>
     </footer>

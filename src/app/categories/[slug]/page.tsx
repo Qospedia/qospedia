@@ -39,12 +39,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const categoryArticles = articles || [];
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen py-12 px-4">
+      <div className="container mx-auto max-w-4xl">
         <header className="mb-8">
-          <h1 className="font-serif text-3xl font-bold text-foreground">{category.name}</h1>
+          <h1 className="text-[20px] font-semibold text-[#050505]">{category.name}</h1>
           {category.description && (
-            <p className="mt-2 text-muted-foreground">{category.description}</p>
+            <p className="mt-2 text-[14px] text-[#636363]">{category.description}</p>
           )}
         </header>
 
@@ -52,13 +52,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           <div className="space-y-4">
             {categoryArticles.map((article: any, index) => (
               <Link key={article.id} href={`/article/${article.slug}`}>
-                <Card className="transition-all hover:shadow-md animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                  <CardContent className="p-6">
-                    <h2 className="font-serif text-xl font-semibold text-foreground">{article.title}</h2>
+                <Card className="transition-all hover:shadow-md">
+                  <CardContent className="p-4">
+                    <h2 className="text-[16px] font-semibold text-[#050505]">{article.title}</h2>
                     {article.summary && (
-                      <p className="mt-2 text-muted-foreground line-clamp-2">{article.summary}</p>
+                      <p className="mt-2 text-[14px] text-[#636363] line-clamp-2">{article.summary}</p>
                     )}
-                    <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="mt-3 flex items-center gap-4 text-[12px] text-[#858585]">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {new Date(article.published_at || article.created_at).toLocaleDateString()}
@@ -71,9 +71,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No articles in this category yet.</p>
+            <p className="text-[14px] text-[#636363]">No articles in this category yet.</p>
             <Link href="/editor/new">
-              <span className="text-accent hover:underline cursor-pointer">Be the first to add one!</span>
+              <span className="text-[#2563EB] hover:underline cursor-pointer">Be the first to add one!</span>
             </Link>
           </div>
         )}

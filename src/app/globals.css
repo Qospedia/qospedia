@@ -4,43 +4,49 @@
 
 @layer base {
   :root {
-    --background: #fdfbf7;
-    --foreground: #1a2332;
-    --card: #fefae0;
-    --card-foreground: #1e3a5f;
-    --primary: #1e3a5f;
-    --primary-foreground: #fdfbf7;
-    --secondary: #f5f0dc;
-    --secondary-foreground: #1e3a5f;
-    --muted: #f5f0dc;
-    --muted-foreground: #6b7280;
-    --accent: #e07a5f;
-    --accent-foreground: #fdfbf7;
-    --destructive: #dc2626;
-    --destructive-foreground: #fdfbf7;
-    --border: #e5dfd0;
-    --input: #e5dfd0;
-    --ring: #e07a5f;
+    --primary: #050505;
+    --primary-foreground: #FCFCFC;
+    --secondary: #F7F7F7;
+    --secondary-foreground: #050505;
+    --muted: #F7F7F7;
+    --muted-foreground: #636363;
+    --accent: #2563EB;
+    --accent-foreground: #FCFCFC;
+    --background: #FCFCFC;
+    --foreground: #050505;
+    --card: #FCFCFC;
+    --card-foreground: #050505;
+    --border: #E5E7EB;
+    --input: #F7F7F7;
+    --ring: rgba(59, 130, 246, 0.3);
+    --error: #EF4444;
+    --error-foreground: #FCFCFC;
+    --success: #22C55E;
+    --surface: #FCFCFC;
+    --on-surface: #050505;
   }
 
   .dark {
-    --background: #0f1419;
-    --foreground: #e7e9ea;
-    --card: #15202b;
-    --card-foreground: #e7e9ea;
-    --primary: #e07a5f;
-    --primary-foreground: #0f1419;
-    --secondary: #192734;
-    --secondary-foreground: #e7e9ea;
-    --muted: #192734;
-    --muted-foreground: #8b98a5;
-    --accent: #e07a5f;
-    --accent-foreground: #0f1419;
-    --destructive: #f4212e;
-    --destructive-foreground: #e7e9ea;
-    --border: #38444d;
-    --input: #38444d;
-    --ring: #e07a5f;
+    --primary: #FCFCFC;
+    --primary-foreground: #050505;
+    --secondary: #1A1A1A;
+    --secondary-foreground: #FCFCFC;
+    --muted: #1A1A1A;
+    --muted-foreground: #858585;
+    --accent: #2563EB;
+    --accent-foreground: #FCFCFC;
+    --background: #050505;
+    --foreground: #FCFCFC;
+    --card: #1A1A1A;
+    --card-foreground: #FCFCFC;
+    --border: rgba(252, 252, 252, 0.1);
+    --input: #1A1A1A;
+    --ring: rgba(59, 130, 246, 0.4);
+    --error: #EF4444;
+    --error-foreground: #FCFCFC;
+    --success: #22C55E;
+    --surface: #1A1A1A;
+    --on-surface: #FCFCFC;
   }
 }
 
@@ -49,10 +55,68 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-source), Georgia, serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  h1, h2, h3, h4, h5, h6 { font-family: var(--font-playfair), Georgia, serif; }
+  h1, h2, h3, h4, h5, h6 { 
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+}
+
+@layer components {
+  .text-display {
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 40px;
+    letter-spacing: -0.02em;
+  }
+  .text-heading {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 28px;
+    letter-spacing: -0.01em;
+  }
+  .text-subheading {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    letter-spacing: 0;
+  }
+  .text-body {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    letter-spacing: 0;
+  }
+  .text-button {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+  }
+  .text-button-label {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+  .text-link {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+  .text-caption {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+  }
+  .text-footer {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+  }
 }
 
 @keyframes fadeIn {

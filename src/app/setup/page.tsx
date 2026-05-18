@@ -20,7 +20,6 @@ export default function SetupPage() {
     setStatus('checking');
     const supabase = createClient();
 
-    // Check current article count
     const { count } = await supabase.from('articles').select('*', { count: 'exact', head: true });
     setArticleCount(count || 0);
 
@@ -29,7 +28,6 @@ export default function SetupPage() {
       return;
     }
 
-    // Need to generate more articles
     setStatus('generating');
     
     try {
@@ -55,49 +53,49 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-[#FCFCFC]">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2">
-            <Sparkles className="h-5 w-5 text-accent" />
+          <CardTitle className="flex items-center justify-center gap-2 text-[16px] font-semibold text-[#050505]">
+            <Sparkles className="h-5 w-5 text-[#2563EB]" />
             Setting up Qospedia
           </CardTitle>
-          <CardDescription>Generating encyclopedia articles with AI</CardDescription>
+          <CardDescription className="text-[14px] text-[#636363]">Generating encyclopedia articles with AI</CardDescription>
         </CardHeader>
         <CardContent>
           {status === 'loading' && (
             <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-accent" />
-              <p className="mt-4 text-muted-foreground">Loading...</p>
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2563EB]" />
+              <p className="mt-4 text-[14px] text-[#636363]">Loading...</p>
             </div>
           )}
 
           {status === 'checking' && (
             <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-accent" />
-              <p className="mt-4 text-muted-foreground">Checking database...</p>
-              <p className="text-sm text-muted-foreground">Current articles: {articleCount}</p>
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2563EB]" />
+              <p className="mt-4 text-[14px] text-[#636363]">Checking database...</p>
+              <p className="text-[12px] text-[#858585]">Current articles: {articleCount}</p>
             </div>
           )}
 
           {status === 'generating' && (
             <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-accent" />
-              <p className="mt-4 text-muted-foreground">Generating articles with AI...</p>
-              <p className="text-sm text-muted-foreground">This may take a few minutes</p>
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2563EB]" />
+              <p className="mt-4 text-[14px] text-[#636363]">Generating articles with AI...</p>
+              <p className="text-[12px] text-[#858585]">This may take a few minutes</p>
             </div>
           )}
 
           {status === 'done' && (
             <div className="text-center py-8">
-              <CheckCircle className="h-12 w-12 mx-auto text-green-500" />
-              <p className="mt-4 font-medium">Setup Complete!</p>
-              <p className="text-sm text-muted-foreground">
+              <CheckCircle className="h-12 w-12 mx-auto text-[#22C55E]" />
+              <p className="mt-4 text-[16px] font-medium text-[#050505]">Setup Complete!</p>
+              <p className="text-[14px] text-[#636363]">
                 {articleCount > 0 
                   ? `You have ${articleCount} articles ready` 
                   : 'No articles generated - check API keys'}
               </p>
-              <Button className="mt-6" onClick={() => window.location.href = '/'}>
+              <Button className="mt-6 bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]" onClick={() => window.location.href = '/'}>
                 Go to Homepage
               </Button>
             </div>
@@ -105,10 +103,10 @@ export default function SetupPage() {
 
           {status === 'error' && (
             <div className="text-center py-8">
-              <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
-              <p className="mt-4 font-medium text-destructive">Setup Failed</p>
-              <p className="text-sm text-muted-foreground">{error}</p>
-              <Button className="mt-6" variant="outline" onClick={checkAndGenerate}>
+              <AlertCircle className="h-12 w-12 mx-auto text-[#EF4444]" />
+              <p className="mt-4 text-[16px] font-medium text-[#EF4444]">Setup Failed</p>
+              <p className="text-[14px] text-[#636363]">{error}</p>
+              <Button className="mt-6 bg-[#F7F7F7] text-[#050505] border-[rgba(5,5,5,0.1)]" onClick={checkAndGenerate}>
                 Try Again
               </Button>
             </div>

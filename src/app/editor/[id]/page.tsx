@@ -133,23 +133,23 @@ export default function EditArticlePage() {
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-serif text-3xl font-bold text-foreground">Edit Article</h1>
+            <h1 className="text-[20px] font-semibold text-[#050505]">Edit Article</h1>
             {article && (
-              <p className="text-muted-foreground">by {article.author?.full_name || 'Unknown'}</p>
+              <p className="text-[14px] text-[#636363]">by {article.author?.full_name || 'Unknown'}</p>
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+            <Button variant="outline" onClick={() => router.push('/dashboard')} className="bg-[#F7F7F7] text-[#050505] border-[rgba(5,5,5,0.1)]">
               Cancel
             </Button>
-            <Button variant="outline" onClick={handleSave.bind(null, false)} disabled={loading}>
+            <Button variant="outline" onClick={handleSave.bind(null, false)} disabled={loading} className="bg-[#F7F7F7] text-[#050505] border-[rgba(5,5,5,0.1)]">
               Save Draft
             </Button>
-            <Button variant="accent" onClick={handleSave.bind(null, true)} disabled={loading}>
+            <Button onClick={handleSave.bind(null, true)} disabled={loading} className="bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]">
               {loading ? 'Publishing...' : 'Publish'}
             </Button>
           </div>
@@ -159,26 +159,26 @@ export default function EditArticlePage() {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Article Content</CardTitle>
+                <CardTitle className="text-[16px] font-semibold text-[#050505]">Article Content</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="title">Title</Label>
+                  <Label htmlFor="title" className="text-[14px] font-medium text-[#050505]">Title</Label>
                   <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" required />
                 </div>
                 <div>
-                  <Label htmlFor="summary">Summary</Label>
+                  <Label htmlFor="summary" className="text-[14px] font-medium text-[#050505]">Summary</Label>
                   <div className="flex gap-2 mt-1">
                     <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Article summary..." className="flex-1" rows={2} />
-                    <Button type="button" variant="outline" size="sm" onClick={handleSummarize} disabled={processing || !content.trim()}>
+                    <Button type="button" variant="outline" size="sm" onClick={handleSummarize} disabled={processing || !content.trim()} className="bg-[#F7F7F7] text-[#050505] border-[rgba(5,5,5,0.1)]">
                       AI Summary
                     </Button>
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="content">Content</Label>
-                    <Button type="button" variant="ghost" size="sm" onClick={handleImprove} disabled={processing || !content.trim()}>
+                    <Label htmlFor="content" className="text-[14px] font-medium text-[#050505]">Content</Label>
+                    <Button type="button" variant="ghost" size="sm" onClick={handleImprove} disabled={processing || !content.trim()} className="text-[#636363] hover:bg-[rgba(5,5,5,0.05)]">
                       Improve Writing
                     </Button>
                   </div>
@@ -186,7 +186,7 @@ export default function EditArticlePage() {
                     id="content"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    className="min-h-[500px] font-mono text-sm"
+                    className="min-h-[500px] font-mono text-[14px]"
                     required
                   />
                 </div>
@@ -197,39 +197,39 @@ export default function EditArticlePage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Status</CardTitle>
+                <CardTitle className="text-[16px] font-semibold text-[#050505]">Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Current:</span>
-                  <span className={`text-sm font-medium px-2 py-1 rounded ${article?.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  <span className="text-[14px] text-[#636363]">Current:</span>
+                  <span className={`text-[14px] font-medium px-2 py-0.5 rounded ${article?.status === 'published' ? 'bg-[#F0FDF4] text-[#22C55E]' : 'bg-[#FEF9C3] text-[#CA8A04]'}`}>
                     {article?.status || 'draft'}
                   </span>
                 </div>
                 {article?.created_at && (
-                  <p className="mt-4 text-xs text-muted-foreground">Created: {formatDate(article.created_at)}</p>
+                  <p className="mt-4 text-[12px] text-[#858585]">Created: {formatDate(article.created_at)}</p>
                 )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Revision History</CardTitle>
+                <CardTitle className="text-[16px] font-semibold text-[#050505]">Revision History</CardTitle>
               </CardHeader>
               <CardContent>
                 {history.length > 0 ? (
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {history.map((rev) => (
-                      <div key={rev.id} className="border-b border-border pb-2 last:border-0">
-                        <p className="text-sm font-medium">{rev.change_summary || 'Update'}</p>
-                        <p className="text-xs text-muted-foreground">
+                      <div key={rev.id} className="border-b border-[#E5E7EB] pb-2 last:border-0">
+                        <p className="text-[14px] font-medium text-[#050505]">{rev.change_summary || 'Update'}</p>
+                        <p className="text-[12px] text-[#858585]">
                           {rev.editor?.full_name || 'Unknown'} - {formatDate(rev.created_at)}
                         </p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No revision history</p>
+                  <p className="text-[14px] text-[#636363]">No revision history</p>
                 )}
               </CardContent>
             </Card>

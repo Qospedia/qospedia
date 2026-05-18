@@ -112,16 +112,16 @@ export default function NewArticlePage() {
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto px-4 max-w-4xl">
         <Card>
           <CardHeader>
-            <CardTitle className="font-serif text-2xl">Create New Article</CardTitle>
+            <CardTitle className="text-[20px] font-semibold text-[#050505]">Create New Article</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="title" className="text-[14px] font-medium text-[#050505]">Title</Label>
                 <div className="flex gap-2 mt-1">
                   <Input
                     id="title"
@@ -136,13 +136,14 @@ export default function NewArticlePage() {
                     variant="outline"
                     onClick={handleGenerateDraft}
                     disabled={generating || !title.trim()}
+                    className="bg-[#F7F7F7] text-[#050505] border-[rgba(5,5,5,0.1)]"
                   >
                     {generating ? 'Generating...' : 'AI Draft'}
                   </Button>
                 </div>
               </div>
               <div>
-                <Label htmlFor="summary">Summary (optional)</Label>
+                <Label htmlFor="summary" className="text-[14px] font-medium text-[#050505]">Summary (optional)</Label>
                 <Input
                   id="summary"
                   value={summary}
@@ -152,24 +153,24 @@ export default function NewArticlePage() {
                 />
               </div>
               <div>
-                <Label htmlFor="content">Content</Label>
+                <Label htmlFor="content" className="text-[14px] font-medium text-[#050505]">Content</Label>
                 <Textarea
                   id="content"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Write your article content in Markdown..."
-                  className="min-h-[400px] mt-1 font-mono text-sm"
+                  className="min-h-[400px] mt-1 font-mono text-[14px]"
                   required
                 />
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="mt-2 text-[12px] text-[#858585]">
                   Supports Markdown formatting
                 </p>
               </div>
               <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => router.back()}>
+                <Button type="button" variant="outline" onClick={() => router.back()} className="bg-[#F7F7F7] text-[#050505] border-[rgba(5,5,5,0.1)]">
                   Cancel
                 </Button>
-                <Button type="submit" variant="accent" disabled={loading}>
+                <Button type="submit" className="bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]" disabled={loading}>
                   {loading ? 'Saving...' : 'Save Draft'}
                 </Button>
               </div>

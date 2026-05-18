@@ -66,15 +66,15 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen py-12 px-4">
+      <div className="container mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-serif text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {profile.full_name || profile.email}</p>
+            <h1 className="text-[20px] font-semibold text-[#050505]">Dashboard</h1>
+            <p className="text-[14px] text-[#636363] mt-1">Welcome back, {profile.full_name || profile.email}</p>
           </div>
           <Link href="/editor/new">
-            <Button variant="accent">
+            <Button className="bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]">
               <Plus className="h-4 w-4 mr-2" />
               New Article
             </Button>
@@ -83,35 +83,35 @@ export default function DashboardPage() {
 
         <div className="grid gap-4 md:grid-cols-3 mb-8">
           <Card>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <FileText className="h-6 w-6 text-primary" />
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="bg-[#F7F7F7] p-2 rounded-lg">
+                <FileText className="h-5 w-5 text-[#050505]" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-muted-foreground">Total Articles</p>
+                <p className="text-[20px] font-semibold text-[#050505]">{stats.total}</p>
+                <p className="text-[14px] text-[#636363]">Total Articles</p>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <Eye className="h-6 w-6 text-green-600" />
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="bg-[#F0FDF4] p-2 rounded-lg">
+                <Eye className="h-5 w-5 text-[#22C55E]" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.published}</p>
-                <p className="text-sm text-muted-foreground">Published</p>
+                <p className="text-[20px] font-semibold text-[#050505]">{stats.published}</p>
+                <p className="text-[14px] text-[#636363]">Published</p>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-yellow-100 p-3 rounded-lg">
-                <Clock className="h-6 w-6 text-yellow-600" />
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="bg-[#FEF9C3] p-2 rounded-lg">
+                <Clock className="h-5 w-5 text-[#CA8A04]" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.drafts}</p>
-                <p className="text-sm text-muted-foreground">Drafts</p>
+                <p className="text-[20px] font-semibold text-[#050505]">{stats.drafts}</p>
+                <p className="text-[14px] text-[#636363]">Drafts</p>
               </div>
             </CardContent>
           </Card>
@@ -119,21 +119,21 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Your Articles</CardTitle>
+            <CardTitle className="text-[16px] font-semibold text-[#050505]">Your Articles</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-muted-foreground">Loading...</p>
+              <p className="text-[#636363] text-[14px]">Loading...</p>
             ) : articles.length > 0 ? (
               <div className="space-y-4">
                 {articles.map((article) => (
-                  <div key={article.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div key={article.id} className="flex items-center justify-between p-4 border border-[#E5E7EB] rounded-lg">
                     <div className="flex-1">
-                      <Link href={`/article/${article.slug}`} className="font-medium text-foreground hover:text-accent">
+                      <Link href={`/article/${article.slug}`} className="text-[14px] font-medium text-[#050505] hover:text-[#2563EB]">
                         {article.title}
                       </Link>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                        <span className={`px-2 py-0.5 rounded text-xs ${article.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      <div className="flex items-center gap-4 mt-1 text-[12px] text-[#858585]">
+                        <span className={`px-2 py-0.5 rounded text-[12px] ${article.status === 'published' ? 'bg-[#F0FDF4] text-[#22C55E]' : 'bg-[#FEF9C3] text-[#CA8A04]'}`}>
                           {article.status}
                         </span>
                         <span>{article.view_count} views</span>
@@ -142,9 +142,9 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex gap-2">
                       <Link href={`/editor/${article.id}`}>
-                        <Button variant="outline" size="sm">Edit</Button>
+                        <Button variant="outline" size="sm" className="text-[14px]">Edit</Button>
                       </Link>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(article.id)} className="text-destructive">
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(article.id)} className="text-[14px] text-[#EF4444]">
                         Delete
                       </Button>
                     </div>
@@ -153,9 +153,9 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No articles yet. Create your first!</p>
+                <p className="text-[#636363] text-[14px]">No articles yet. Create your first!</p>
                 <Link href="/editor/new">
-                  <Button className="mt-4">Create Article</Button>
+                  <Button className="mt-4 bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]">Create Article</Button>
                 </Link>
               </div>
             )}

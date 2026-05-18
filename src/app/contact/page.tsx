@@ -28,25 +28,31 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto px-4 max-w-3xl">
-        <h1 className="font-serif text-4xl font-bold text-foreground mb-4">Contact & Feedback</h1>
-        <p className="text-xl text-muted-foreground mb-8">We'd love to hear from you!</p>
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card><CardContent className="p-6 flex items-start gap-4"><div className="bg-accent/10 p-3 rounded-lg"><Mail className="h-6 w-6 text-accent" /></div><div><h3 className="font-semibold text-foreground">Email Us</h3><p className="text-sm text-muted-foreground mt-1">qospedia.com@gmail.com</p></div></CardContent></Card>
-          <Card><CardContent className="p-6 flex items-start gap-4"><div className="bg-accent/10 p-3 rounded-lg"><MessageSquare className="h-6 w-6 text-accent" /></div><div><h3 className="font-semibold text-foreground">Feedback Form</h3><p className="text-sm text-muted-foreground mt-1">Fill out the form below</p></div></CardContent></Card>
+        <h1 className="text-[32px] font-semibold text-[#050505] mb-4 tracking-tight">Contact & Feedback</h1>
+        <p className="text-[16px] text-[#636363] mb-8">We'd love to hear from you!</p>
+        <div className="grid gap-4 md:grid-cols-2 mb-8">
+          <Card><CardContent className="p-4 flex items-start gap-4">
+            <div className="bg-[#F7F7F7] p-2 rounded-lg"><Mail className="h-5 w-5 text-[#2563EB]" /></div>
+            <div><h3 className="text-[14px] font-semibold text-[#050505]">Email Us</h3><p className="text-[12px] text-[#636363] mt-1">qospedia.com@gmail.com</p></div>
+          </CardContent></Card>
+          <Card><CardContent className="p-4 flex items-start gap-4">
+            <div className="bg-[#F7F7F7] p-2 rounded-lg"><MessageSquare className="h-5 w-5 text-[#2563EB]" /></div>
+            <div><h3 className="text-[14px] font-semibold text-[#050505]">Feedback Form</h3><p className="text-[12px] text-[#636363] mt-1">Fill out the form below</p></div>
+          </CardContent></Card>
         </div>
         <Card>
-          <CardHeader><CardTitle>Send us a message</CardTitle><CardDescription>We respond within 24-48 hours.</CardDescription></CardHeader>
+          <CardHeader><CardTitle className="text-[16px] font-semibold text-[#050505]">Send us a message</CardTitle><CardDescription className="text-[#636363]">We respond within 24-48 hours.</CardDescription></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <div><Label htmlFor="name">Your Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1" /></div>
-                <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" /></div>
+                <div><Label htmlFor="name" className="text-[14px] font-medium text-[#050505]">Your Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1" /></div>
+                <div><Label htmlFor="email" className="text-[14px] font-medium text-[#050505]">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" /></div>
               </div>
-              <div><Label htmlFor="subject">Subject</Label><Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} required className="mt-1" /></div>
-              <div><Label htmlFor="message">Message</Label><Textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} required rows={6} className="mt-1" /></div>
-              <Button type="submit" className="w-full" disabled={loading}><Send className="h-4 w-4 mr-2" />{loading ? 'Sending...' : 'Send Message'}</Button>
+              <div><Label htmlFor="subject" className="text-[14px] font-medium text-[#050505]">Subject</Label><Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} required className="mt-1" /></div>
+              <div><Label htmlFor="message" className="text-[14px] font-medium text-[#050505]">Message</Label><Textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} required rows={6} className="mt-1" /></div>
+              <Button type="submit" className="w-full bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]" disabled={loading}><Send className="h-4 w-4 mr-2" />{loading ? 'Sending...' : 'Send Message'}</Button>
             </form>
           </CardContent>
         </Card>

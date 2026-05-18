@@ -65,21 +65,21 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     .limit(3);
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen py-12 px-4">
+      <div className="container mx-auto max-w-4xl">
         <article>
           <header className="mb-8">
-            <h1 className="font-serif text-4xl font-bold text-foreground mb-4">
+            <h1 className="text-[32px] font-semibold text-[#050505] mb-4 tracking-tight">
               {article.title}
             </h1>
 
             {article.summary && (
-              <p className="text-xl text-muted-foreground mb-6">
+              <p className="text-[16px] text-[#636363] mb-6 leading-relaxed">
                 {article.summary}
               </p>
             )}
 
-            <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-6 text-[14px] text-[#858585]">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span>Published {article.published_at ? formatDate(article.published_at) : formatDate(article.created_at)}</span>
@@ -94,33 +94,33 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <div className="mb-12">
             {article.content.split('\n').map((paragraph: string, idx: number) => {
               if (paragraph.startsWith('# ')) {
-                return <h1 key={idx} style={{ fontSize: '1.875rem', fontWeight: 'bold', fontFamily: 'Georgia, serif', color: '#1e3a5f', marginTop: '2rem', marginBottom: '1rem' }}>{paragraph.replace('# ', '')}</h1>;
+                return <h1 key={idx} className="text-[24px] font-semibold text-[#050505] mt-8 mb-4">{paragraph.replace('# ', '')}</h1>;
               }
               if (paragraph.startsWith('## ')) {
-                return <h2 key={idx} style={{ fontSize: '1.5rem', fontWeight: '600', fontFamily: 'Georgia, serif', color: '#1e3a5f', marginTop: '1.5rem', marginBottom: '0.75rem' }}>{paragraph.replace('## ', '')}</h2>;
+                return <h2 key={idx} className="text-[20px] font-semibold text-[#050505] mt-6 mb-3">{paragraph.replace('## ', '')}</h2>;
               }
               if (paragraph.startsWith('### ')) {
-                return <h3 key={idx} style={{ fontSize: '1.25rem', fontWeight: '600', fontFamily: 'Georgia, serif', color: '#1e3a5f', marginTop: '1rem', marginBottom: '0.5rem' }}>{paragraph.replace('### ', '')}</h3>;
+                return <h3 key={idx} className="text-[16px] font-semibold text-[#050505] mt-4 mb-2">{paragraph.replace('### ', '')}</h3>;
               }
               if (paragraph.trim() === '') {
                 return <br key={idx} />;
               }
               if (paragraph.startsWith('- ') || paragraph.startsWith('* ')) {
-                return <li key={idx} style={{ marginBottom: '0.5rem', marginLeft: '1.5rem' }}>{paragraph.replace(/^[*-] /, '')}</li>;
+                return <li key={idx} className="mb-2 ml-6 text-[#050505]">{paragraph.replace(/^[*-] /, '')}</li>;
               }
               if (paragraph.match(/^\d+\./)) {
-                return <li key={idx} style={{ marginBottom: '0.5rem', marginLeft: '1.5rem' }}>{paragraph.replace(/^\d+\.\s/, '')}</li>;
+                return <li key={idx} className="mb-2 ml-6 text-[#050505]">{paragraph.replace(/^\d+\.\s/, '')}</li>;
               }
               if (paragraph.startsWith('> ')) {
-                return <blockquote key={idx} style={{ borderLeft: '4px solid #e07a5f', paddingLeft: '1rem', fontStyle: 'italic', color: '#6b7280', margin: '1rem 0' }}>{paragraph.replace('> ', '')}</blockquote>;
+                return <blockquote key={idx} className="border-l-4 border-[#2563EB] pl-4 italic text-[#636363] my-4">{paragraph.replace('> ', '')}</blockquote>;
               }
               if (paragraph.startsWith('```')) {
                 return null;
               }
               return paragraph.startsWith('http') ? (
-                <a key={idx} href={paragraph} target="_blank" rel="noopener noreferrer" style={{ color: '#e07a5f', textDecoration: 'underline' }}>{paragraph}</a>
+                <a key={idx} href={paragraph} target="_blank" rel="noopener noreferrer" className="text-[#2563EB] hover:underline block mb-2">{paragraph}</a>
               ) : (
-                <p key={idx} style={{ fontSize: '1.125rem', lineHeight: '1.75', color: 'var(--foreground)', marginBottom: '1rem' }}>{paragraph}</p>
+                <p key={idx} className="text-[14px] leading-[24px] text-[#050505] mb-4">{paragraph}</p>
               );
             })}
           </div>
@@ -128,25 +128,25 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           {citations && citations.length > 0 && (
             <Card className="mb-12">
               <CardHeader>
-                <CardTitle className="text-lg">Sources & Citations</CardTitle>
+                <CardTitle className="text-[16px] font-semibold text-[#050505]">Sources & Citations</CardTitle>
               </CardHeader>
               <CardContent>
                 <ol className="list-decimal pl-5 space-y-2">
                   {citations.map((citation) => (
-                    <li key={citation.id} className="text-sm">
+                    <li key={citation.id} className="text-[14px] text-[#050505]">
                       {citation.source_title}
                       {citation.source_url && (
                         <a
                           href={citation.source_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-accent hover:underline ml-1"
+                          className="text-[#2563EB] hover:underline ml-1"
                         >
                           [source]
                         </a>
                       )}
-                      {citation.source_author && <span className="text-muted-foreground"> by {citation.source_author}</span>}
-                      {citation.source_date && <span className="text-muted-foreground">, {citation.source_date}</span>}
+                      {citation.source_author && <span className="text-[#858585]"> by {citation.source_author}</span>}
+                      {citation.source_date && <span className="text-[#858585]">, {citation.source_date}</span>}
                     </li>
                   ))}
                 </ol>
@@ -157,15 +157,15 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
         {relatedArticles && relatedArticles.length > 0 && (
           <section className="mt-12">
-            <h2 className="font-serif text-2xl font-bold text-foreground mb-6">Related Articles</h2>
+            <h2 className="text-[20px] font-semibold text-[#050505] mb-6">Related Articles</h2>
             <div className="grid gap-4 md:grid-cols-3">
               {relatedArticles.map((related) => (
                 <Link key={related.id} href={`/article/${related.slug}`}>
                   <Card className="transition-all hover:shadow-md hover:-translate-y-1">
                     <CardContent className="p-4">
-                      <h3 className="font-medium text-foreground line-clamp-2">{related.title}</h3>
+                      <h3 className="font-medium text-[#050505] line-clamp-2 text-[14px]">{related.title}</h3>
                       {related.summary && (
-                        <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                        <p className="mt-2 text-[14px] text-[#636363] line-clamp-2">
                           {related.summary}
                         </p>
                       )}

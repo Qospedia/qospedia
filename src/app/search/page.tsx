@@ -52,10 +52,10 @@ async function SearchResults({ query }: { query: string }) {
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
-                    <h2 className="font-serif text-xl font-semibold text-foreground">{article.title}</h2>
-                    <p className="mt-3 text-muted-foreground line-clamp-2">{article.summary || generateExcerpt(article.content)}</p>
+                    <h2 className="text-[16px] font-semibold text-[#050505]">{article.title}</h2>
+                    <p className="mt-3 text-[#636363] line-clamp-2 text-[14px]">{article.summary || generateExcerpt(article.content)}</p>
                   </div>
-                  <FileText className="h-6 w-6 text-muted-foreground" />
+                  <FileText className="h-5 w-5 text-[#858585]" />
                 </div>
               </CardContent>
             </Card>
@@ -117,15 +117,15 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
     if (newArticle && newArticle.length > 0) {
       return (
         <>
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-700 font-medium">✓ New article created for "{query}"</p>
+          <div className="mb-6 p-4 bg-[#F0FDF4] border border-[#22C55E] rounded-lg">
+            <p className="text-[#22C55E] font-medium text-[14px]">✓ New article created for "{query}"</p>
           </div>
           <Link href={`/article/${newArticle[0].slug}`}>
-            <Card className="transition-all hover:shadow-md border-green-500 max-w-xl mx-auto">
+            <Card className="transition-all hover:shadow-md border-[#22C55E] max-w-xl mx-auto">
               <CardContent className="p-6">
-                <h2 className="font-serif text-xl font-semibold text-foreground">{newArticle[0].title}</h2>
-                <p className="mt-3 text-muted-foreground line-clamp-3">{newArticle[0].summary || 'AI generated content...'}</p>
-                <span className="inline-block mt-3 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">AI Generated</span>
+                <h2 className="text-[16px] font-semibold text-[#050505]">{newArticle[0].title}</h2>
+                <p className="mt-3 text-[#636363] line-clamp-3 text-[14px]">{newArticle[0].summary || 'AI generated content...'}</p>
+                <span className="inline-block mt-3 text-[12px] bg-[#F0FDF4] text-[#22C55E] px-2 py-0.5 rounded">AI Generated</span>
               </CardContent>
             </Card>
           </Link>
@@ -140,26 +140,26 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
     <div className="text-center py-8">
       <div className="flex flex-col items-center gap-4">
         <div className="animate-pulse">
-          <Sparkles className="h-12 w-12 text-accent" />
+          <Sparkles className="h-10 w-10 text-[#2563EB]" />
         </div>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-[16px] text-[#636363]">
           Generating article for "{query}"...
         </p>
         <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-accent" />
-          <span className="text-sm text-muted-foreground">Powered by Groq AI</span>
+          <Loader2 className="h-4 w-4 animate-spin text-[#2563EB]" />
+          <span className="text-[14px] text-[#858585]">Powered by Groq AI</span>
         </div>
       </div>
       
       {displayError && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg max-w-xl mx-auto">
-          <div className="flex items-center gap-2 text-red-700 mb-2">
-            <AlertCircle className="h-5 w-5" />
-            <span className="font-medium">Generation Issue</span>
+        <div className="mt-6 p-4 bg-[#FEF2F2] border border-[#EF4444] rounded-lg max-w-xl mx-auto">
+          <div className="flex items-center gap-2 text-[#EF4444] mb-2">
+            <AlertCircle className="h-4 w-4" />
+            <span className="font-medium text-[14px]">Generation Issue</span>
           </div>
-          <p className="text-sm text-red-600">{displayError}</p>
+          <p className="text-[14px] text-[#EF4444]">{displayError}</p>
           {initialError && (
-            <p className="text-xs text-red-500 mt-2">
+            <p className="text-[12px] text-[#EF4444] opacity-70 mt-2">
               Initial search failed, but generation was attempted. Refreshing may help.
             </p>
           )}
@@ -174,33 +174,33 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const query = params.q || '';
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <h1 className="font-serif text-3xl font-bold text-foreground mb-8">Search Articles</h1>
+    <div className="min-h-screen py-12 px-4">
+      <div className="container mx-auto max-w-4xl">
+        <h1 className="text-[20px] font-semibold text-[#050505] mb-8">Search Articles</h1>
 
         <form action="/search" className="mb-8">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <SearchIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input name="q" type="search" placeholder="Search for articles..." defaultValue={query} className="h-12 pl-11 pr-4" />
+              <SearchIcon className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#858585]" />
+              <Input name="q" type="search" placeholder="Search for articles..." defaultValue={query} className="h-[48px] pl-14 pr-6" />
             </div>
-            <Button type="submit" size="lg" variant="accent">Search</Button>
+            <Button type="submit" size="lg" className="bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]">Search</Button>
           </div>
         </form>
 
         {query ? (
           <Suspense fallback={
             <div className="text-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-accent" />
-              <p className="text-muted-foreground mt-4">Searching...</p>
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2563EB]" />
+              <p className="text-[#636363] mt-4 text-[14px]">Searching...</p>
             </div>
           }>
             <SearchResults query={query} />
           </Suspense>
         ) : (
           <div className="text-center py-12">
-            <SearchIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-muted-foreground">Enter a search term to find or create articles</p>
+            <SearchIcon className="mx-auto h-10 w-10 text-[#858585]" />
+            <p className="mt-4 text-[#636363] text-[14px]">Enter a search term to find or create articles</p>
           </div>
         )}
       </div>

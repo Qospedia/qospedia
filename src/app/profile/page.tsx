@@ -47,27 +47,27 @@ export default function ProfilePage() {
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 px-4">
       <div className="container mx-auto px-4 max-w-md">
         <Card>
           <CardHeader>
-            <CardTitle className="font-serif text-2xl">Profile Settings</CardTitle>
+            <CardTitle className="text-[20px] font-semibold text-[#050505]">Profile Settings</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdate} className="space-y-4">
               <div>
-                <Label>Email</Label>
-                <Input value={profile.email} disabled className="mt-1 bg-secondary" />
+                <Label className="text-[14px] font-medium text-[#050505]">Email</Label>
+                <Input value={profile.email} disabled className="mt-1 bg-[#F7F7F7]" />
               </div>
               <div>
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName" className="text-[14px] font-medium text-[#050505]">Full Name</Label>
                 <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-1" />
               </div>
               <div>
-                <Label>Role</Label>
-                <Input value={profile.role} disabled className="mt-1 bg-secondary capitalize" />
+                <Label className="text-[14px] font-medium text-[#050505]">Role</Label>
+                <Input value={profile.role} disabled className="mt-1 bg-[#F7F7F7] capitalize" />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]" disabled={loading}>
                 {loading ? 'Saving...' : 'Save Changes'}
               </Button>
             </form>

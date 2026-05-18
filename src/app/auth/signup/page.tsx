@@ -51,9 +51,7 @@ export default function SignupPage() {
         return;
       }
 
-      // If user is created without email confirmation, log them in
       if (data.user) {
-        // Check if we need email confirmation
         const { data: sessionData } = await supabase.auth.getSession();
         if (sessionData.session) {
           router.push('/');
@@ -95,20 +93,20 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-[#FCFCFC] dark:bg-[#050505]">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="font-serif text-2xl">Create Account</CardTitle>
-          <CardDescription>Join Qospedia</CardDescription>
+          <CardTitle className="text-[20px] font-semibold text-[#050505]">Create Account</CardTitle>
+          <CardDescription className="text-[#636363]">Join Qospedia</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive text-destructive text-sm rounded-lg">
+            <div className="mb-4 p-3 bg-[#FEF2F2] border border-[#EF4444] text-[#EF4444] text-[14px] rounded-lg">
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 text-sm rounded-lg">
+            <div className="mb-4 p-3 bg-[#F0FDF4] border border-[#22C55E] text-[#22C55E] text-[14px] rounded-lg">
               {success}
             </div>
           )}
@@ -118,31 +116,31 @@ export default function SignupPage() {
           </Button>
           
           <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Or</span></div>
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-[#E5E7EB]" /></div>
+            <div className="relative flex justify-center text-[12px]"><span className="bg-[#FCFCFC] px-2 text-[#636363]">Or</span></div>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName" className="text-[14px] font-medium text-[#050505]">Full Name</Label>
               <Input id="fullName" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="mt-1" />
             </div>
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-[14px] font-medium text-[#050505]">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" />
             </div>
             <div>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-[14px] font-medium text-[#050505]">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="mt-1" />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]" disabled={loading}>
               {loading ? 'Creating...' : 'Sign Up'}
             </Button>
           </form>
           
-          <div className="mt-4 text-center text-sm">
-            <span className="text-muted-foreground">Already have an account? </span>
-            <Link href="/auth/login" className="text-accent hover:underline">Sign in</Link>
+          <div className="mt-4 text-center text-[14px]">
+            <span className="text-[#636363]">Already have an account? </span>
+            <Link href="/auth/login" className="text-[#2563EB] hover:underline">Sign in</Link>
           </div>
         </CardContent>
       </Card>

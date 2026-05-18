@@ -26,11 +26,11 @@ export default async function CategoriesPage() {
   }, {} as Record<string, number>) || {};
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen py-12 px-4">
+      <div className="container mx-auto">
         <div className="mb-8">
-          <h1 className="font-serif text-3xl font-bold text-foreground">Categories</h1>
-          <p className="mt-2 text-muted-foreground">
+          <h1 className="text-[20px] font-semibold text-[#050505]">Categories</h1>
+          <p className="mt-2 text-[14px] text-[#636363]">
             Browse articles organized by topic
           </p>
         </div>
@@ -38,24 +38,24 @@ export default async function CategoriesPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {categories?.map((category, index) => (
             <Link key={category.id} href={`/categories/${category.slug}`}>
-              <Card className="transition-all hover:shadow-lg hover:-translate-y-1 animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                <CardContent className="p-6">
+              <Card className="transition-all hover:shadow-md hover:-translate-y-1">
+                <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="font-serif text-xl font-semibold text-foreground">
+                      <h2 className="text-[16px] font-semibold text-[#050505]">
                         {category.name}
                       </h2>
                       {category.description && (
-                        <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                        <p className="mt-2 text-[14px] text-[#636363] line-clamp-2">
                           {category.description}
                         </p>
                       )}
                     </div>
-                    <div className="bg-secondary rounded-full p-3">
-                      <BookOpen className="h-5 w-5 text-accent" />
+                    <div className="bg-[#F7F7F7] rounded-full p-2">
+                      <BookOpen className="h-4 w-4 text-[#2563EB]" />
                     </div>
                   </div>
-                  <div className="mt-4 text-sm text-muted-foreground">
+                  <div className="mt-4 text-[14px] text-[#858585]">
                     {countByCategory[category.id] || 0} articles
                   </div>
                 </CardContent>

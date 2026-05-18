@@ -4,23 +4,24 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm',
-        outline: 'border border-border bg-transparent hover:bg-secondary hover:text-secondary-foreground',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-secondary hover:text-secondary-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
-        accent: 'bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm',
+        default: 'bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a] shadow-none',
+        destructive: 'bg-[#EF4444] text-[#FCFCFC] hover:bg-[#DC2626]',
+        outline: 'border border-[rgba(5,5,5,0.1)] bg-[#F7F7F7] text-[#050505] hover:bg-[#EFEFEF] hover:border-[rgba(5,5,5,0.15)]',
+        secondary: 'bg-[#F7F7F7] text-[#050505] hover:bg-[#EFEFEF]',
+        ghost: 'bg-transparent text-[#636363] hover:bg-[rgba(5,5,5,0.05)] hover:text-[#050505]',
+        link: 'text-[#2563EB] underline-offset-4 hover:underline',
+        accent: 'bg-[#2563EB] text-[#FCFCFC] hover:bg-[#1E40AF]',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3 text-xs',
-        lg: 'h-12 rounded-lg px-8 text-base',
-        icon: 'h-10 w-10',
+        default: 'h-[34px] rounded-full px-4 py-[6px] text-[14px] font-medium leading-[20px]',
+        sm: 'h-[32px] rounded-full px-4 py-[6px] text-[14px] font-medium leading-[20px]',
+        lg: 'h-[40px] rounded-full px-6 py-[8px] text-[16px] font-medium',
+        icon: 'h-[36px] w-[36px] rounded-full p-[6px] text-[16px]',
+        'icon-sm': 'h-[32px] w-[32px] rounded-full p-0 text-[16px]',
       },
     },
     defaultVariants: {
