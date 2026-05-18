@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { Search as SearchIcon, FileText, Loader2, AlertCircle, Sparkles, Database, Settings } from 'lucide-react';
+import { Search as SearchIcon, FileText, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -20,8 +20,8 @@ async function SearchResults({ query }: { query: string }) {
   const supabase = await createClient();
   const searchTerm = `%${query}%`;
 
-  let dbReady = false;
   let articles: any[] = [];
+  let searchError: string | null = null;
 
   try {
     const { data, error } = await supabase
@@ -32,38 +32,15 @@ async function SearchResults({ query }: { query: string }) {
       .order('view_count', { ascending: false })
       .limit(20);
 
-    if (!error && data) {
-      dbReady = true;
-      articles = data;
+    if (error) {
+      console.log('[Search] Query error (may be first setup):', error.message);
+      searchError = error.message;
+    } else {
+      articles = data || [];
     }
-  } catch {
-    dbReady = false;
-  }
-
-  if (!dbReady) {
-    return (
-      <div className="text-center py-12">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 max-w-2xl mx-auto">
-          <div className="flex items-center gap-3 text-amber-700 mb-4">
-            <Database className="h-8 w-8" />
-            <h2 className="text-xl font-semibold">Database Setup Required</h2>
-          </div>
-          <p className="text-amber-700 mb-4">
-            The database schema hasn't been set up yet. You need to run the SQL schema before articles can be created.
-          </p>
-          <div className="bg-white/50 rounded-lg p-4 text-left space-y-2">
-            <p className="font-medium text-sm">Quick Setup:</p>
-            <ol className="text-sm text-amber-800 space-y-1 list-decimal list-inside">
-              <li>Go to your <a href="https://supabase.com/dashboard" target="_blank" className="underline">Supabase Dashboard</a></li>
-              <li>Select your project</li>
-              <li>Click <strong>SQL Editor</strong> in the sidebar</li>
-              <li>Copy & paste the contents of <code className="bg-amber-100 px-1 rounded">supabase/schema.sql</code></li>
-              <li>Click <strong>Run</strong> to execute</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    );
+  } catch (e: any) {
+    console.log('[Search] Query exception:', e.message);
+    searchError = e.message;
   }
 
   if (articles.length > 0) {
@@ -88,11 +65,11 @@ async function SearchResults({ query }: { query: string }) {
     );
   }
 
-  console.log(`[Search] No articles for "${query}", generating...`);
-  return <GeneratingArticle query={query} />;
+  console.log(`[Search] No articles found for "${query}", attempting to generate...`);
+  return <GeneratingArticle query={query} initialError={searchError} />;
 }
 
-async function GeneratingArticle({ query }: { query: string }) {
+async function GeneratingArticle({ query, initialError }: { query: string; initialError: string | null }) {
   const supabase = await createClient();
   const searchTerm = `%${query}%`;
 
@@ -104,7 +81,7 @@ async function GeneratingArticle({ query }: { query: string }) {
     console.log('[Search] Generation result:', JSON.stringify(generationResult));
   } catch (err: any) {
     console.error('[Search] Generation error:', err);
-    generationResult = { success: false, generated: 0, error: err.message || 'Failed to generate' };
+    generationResult = { success: false, generated: 0, error: err.message || 'Failed to generate article' };
   }
 
   if (generationResult.success && generationResult.generated > 0) {
@@ -157,6 +134,8 @@ async function GeneratingArticle({ query }: { query: string }) {
     }
   }
 
+  const displayError = generationResult.error || initialError;
+
   return (
     <div className="text-center py-8">
       <div className="flex flex-col items-center gap-4">
@@ -172,13 +151,18 @@ async function GeneratingArticle({ query }: { query: string }) {
         </div>
       </div>
       
-      {generationResult.error && (
+      {displayError && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg max-w-xl mx-auto">
           <div className="flex items-center gap-2 text-red-700 mb-2">
             <AlertCircle className="h-5 w-5" />
-            <span className="font-medium">Generation Failed</span>
+            <span className="font-medium">Generation Issue</span>
           </div>
-          <p className="text-sm text-red-600">{generationResult.error}</p>
+          <p className="text-sm text-red-600">{displayError}</p>
+          {initialError && (
+            <p className="text-xs text-red-500 mt-2">
+              Initial search failed, but generation was attempted. Refreshing may help.
+            </p>
+          )}
         </div>
       )}
     </div>
