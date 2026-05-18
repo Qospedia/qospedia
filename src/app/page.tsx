@@ -4,7 +4,6 @@ import { Search, BookOpen, Clock, TrendingUp, ArrowRight, Sparkles } from 'lucid
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { generateExcerpt } from '@/lib/utils';
 import { autoGenerateArticles, autoGenerateBulk } from '@/lib/auto-generate';
 
 // This ensures articles are generated on server start if none exist
@@ -104,7 +103,7 @@ export default async function HomePage() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-muted-foreground line-clamp-3">
-                        {article.summary || generateExcerpt(article.content)}
+                        {article.summary || 'Read more...'}
                       </p>
                       <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
@@ -171,13 +170,10 @@ export default async function HomePage() {
                     <div>
                       <h3 className="font-medium text-foreground">{article.title}</h3>
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
-                        {article.summary || generateExcerpt(article.content)}
+                        {article.summary || 'Read more...'}
                       </p>
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
-                      {article.author?.full_name && (
-                        <p>by {article.author.full_name}</p>
-                      )}
                       {article.published_at && (
                         <p>{new Date(article.published_at).toLocaleDateString()}</p>
                       )}
