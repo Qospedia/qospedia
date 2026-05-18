@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { Search as SearchIcon, FileText, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { Search as SearchIcon, FileText, Loader2, AlertCircle, Sparkles, Database } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -20,15 +20,48 @@ async function SearchResults({ query }: { query: string }) {
   const supabase = await createClient();
   const searchTerm = `%${query}%`;
 
-  const { data: articles } = await supabase
-    .from('articles')
-    .select('*, author:profiles(full_name), categories:categories(*)')
-    .eq('status', 'published')
-    .or(`title.ilike.${searchTerm},content.ilike.${searchTerm},summary.ilike.${searchTerm}`)
-    .order('view_count', { ascending: false })
-    .limit(20);
+  let dbError: string | null = null;
+  let articles: any[] = [];
 
-  if (articles && articles.length > 0) {
+  try {
+    const { data, error } = await supabase
+      .from('articles')
+      .select('*, author:profiles(full_name), categories:categories(*)')
+      .eq('status', 'published')
+      .or(`title.ilike.${searchTerm},content.ilike.${searchTerm},summary.ilike.${searchTerm}`)
+      .order('view_count', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error('[Search] Database error:', error);
+      dbError = error.message;
+    } else {
+      articles = data || [];
+    }
+  } catch (e: any) {
+    console.error('[Search] Database connection error:', e);
+    dbError = 'Database connection failed. Please ensure the schema is properly configured.';
+  }
+
+  if (dbError) {
+    return (
+      <div className="text-center py-12">
+        <Database className="mx-auto h-12 w-12 text-red-400 mb-4" />
+        <h2 className="text-xl font-semibold text-foreground mb-2">Database Not Configured</h2>
+        <p className="text-muted-foreground mb-4">The articles table doesn't exist yet.</p>
+        <p className="text-sm text-muted-foreground mb-6">Please run the schema.sql file in your Supabase dashboard to create the required tables.</p>
+        <div className="bg-muted p-4 rounded-lg max-w-xl mx-auto text-left">
+          <p className="text-sm font-mono text-muted-foreground">
+            1. Go to your Supabase project dashboard<br/>
+            2. Open the SQL Editor<br/>
+            3. Run the contents of supabase/schema.sql
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (articles.length > 0) {
     return (
       <div className="space-y-4">
         {articles.map((article) => (
@@ -89,7 +122,7 @@ async function GeneratingArticle({ query }: { query: string }) {
   if (generationResult.success && generationResult.generated > 0) {
     const slug = query.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     
-    let { data: newArticle } = await supabase
+    let { data: newArticle, error } = await supabase
       .from('articles')
       .select('*, author:profiles(full_name)')
       .eq('status', 'published')
