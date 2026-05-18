@@ -117,37 +117,55 @@ async function fetchWebSearchSources(topic: string): Promise<SourceData[]> {
 
 async function generateWithGroq(systemPrompt: string, userPrompt: string): Promise<string> {
   const apiKey = getGroqApiKey();
-
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 4000,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Groq API error: ${response.status} - ${error}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content || '';
+  const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'qwen/qwen3-32b'];
   
-  if (!content) {
-    throw new Error('No content generated from Groq');
+  for (const model of models) {
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
+      });
+
+      if (response.status === 429) {
+        console.log(`[Groq] Rate limited on ${model}, trying next model...`);
+        continue;
+      }
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Groq API error: ${response.status} - ${error}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      
+      if (!content) {
+        throw new Error('No content generated from Groq');
+      }
+      
+      console.log(`[Groq] Successfully generated with model: ${model}`);
+      return content;
+    } catch (e: any) {
+      if (e.message?.includes('429') || e.message?.includes('rate limit')) {
+        continue;
+      }
+      throw e;
+    }
   }
   
-  return content;
+  throw new Error('All Groq models rate limited. Please try again later.');
 }
 
 export async function autoGenerateArticles(topic: string): Promise<{ success: boolean; generated: number; error?: string }> {
