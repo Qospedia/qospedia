@@ -1,6 +1,31 @@
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const JINA_API_KEY = process.env.JINA_API_KEY;
 
-export async function callGroq(prompt: string, systemPrompt?: string): Promise<string> {
+interface SourceData {
+  title: string;
+  url: string;
+  content: string;
+}
+
+async function fetchWithJina(url: string): Promise<string> {
+  try {
+    const headers: Record<string, string> = { 'Accept': 'application/json' };
+    if (JINA_API_KEY) {
+      headers['Authorization'] = `Bearer ${JINA_API_KEY}`;
+    }
+    const res = await fetch(`https://r.jina.ai/${url}`, { headers });
+    const data = await res.json();
+    return data.content || '';
+  } catch {
+    return '';
+  }
+}
+
+export async function fetchPageContent(url: string): Promise<string> {
+  return fetchWithJina(url);
+}
+
+export async function callGroq(prompt: string, systemPrompt?: string, model: string = 'llama-3.3-70b-versatile'): Promise<string> {
   if (!GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY is not configured');
   }
