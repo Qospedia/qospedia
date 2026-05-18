@@ -32,13 +32,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   const { data: articles } = await supabase
     .from('articles')
-    .select('*, author:profiles(full_name)')
+    .select('id, title, slug, summary, published_at, created_at')
     .eq('status', 'published')
     .limit(20);
 
-  const categoryArticles = articles?.filter((a: any) => 
-    a.categories?.some((c: any) => c.slug === slug)
-  ) || [];
+  const categoryArticles = articles || [];
 
   return (
     <div className="min-h-screen py-12">
@@ -61,7 +59,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                       <p className="mt-2 text-muted-foreground line-clamp-2">{article.summary}</p>
                     )}
                     <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-                      {article.author?.full_name && <span>by {article.author.full_name}</span>}
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {new Date(article.published_at || article.created_at).toLocaleDateString()}

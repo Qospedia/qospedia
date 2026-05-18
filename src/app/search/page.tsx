@@ -26,14 +26,14 @@ async function SearchResults({ query }: { query: string }) {
   try {
     const { data, error } = await supabase
       .from('articles')
-      .select('*, author:profiles(full_name), categories:categories(*)')
+      .select('id, title, slug, summary, content, view_count, created_at, published_at')
       .eq('status', 'published')
       .or(`title.ilike.${searchTerm},content.ilike.${searchTerm},summary.ilike.${searchTerm}`)
       .order('view_count', { ascending: false })
       .limit(20);
 
     if (error) {
-      console.log('[Search] Query error (may be first setup):', error.message);
+      console.log('[Search] Query error:', error.message);
       searchError = error.message;
     } else {
       articles = data || [];
@@ -89,7 +89,7 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
     
     let { data: newArticle } = await supabase
       .from('articles')
-      .select('*, author:profiles(full_name)')
+      .select('id, title, slug, summary, content')
       .eq('status', 'published')
       .eq('slug', slug)
       .limit(1);
@@ -97,7 +97,7 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
     if (!newArticle || newArticle.length === 0) {
       const { data: titleArticles } = await supabase
         .from('articles')
-        .select('*, author:profiles(full_name)')
+        .select('id, title, slug, summary, content')
         .eq('status', 'published')
         .ilike('title', searchTerm)
         .limit(1);
@@ -107,7 +107,7 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
     if (!newArticle || newArticle.length === 0) {
       const { data: recentArticles } = await supabase
         .from('articles')
-        .select('*, author:profiles(full_name)')
+        .select('id, title, slug, summary, content')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(1);

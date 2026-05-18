@@ -27,14 +27,14 @@ export default async function HomePage() {
 
   const { data: featuredArticles } = await supabase
     .from('articles')
-    .select('*, author:profiles(full_name), categories:categories(*)')
+    .select('id, title, slug, summary, content, view_count, published_at')
     .eq('status', 'published')
     .order('view_count', { ascending: false })
     .limit(6);
 
   const { data: recentArticles } = await supabase
     .from('articles')
-    .select('*, author:profiles(full_name)')
+    .select('id, title, slug, summary, published_at')
     .eq('status', 'published')
     .order('published_at', { ascending: false })
     .limit(5);

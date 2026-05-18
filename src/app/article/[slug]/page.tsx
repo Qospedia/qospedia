@@ -37,11 +37,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   const { data: article, error } = await supabase
     .from('articles')
-    .select(`
-      *,
-      author:profiles(id, full_name, avatar_url),
-      categories:categories(*)
-    `)
+    .select('id, title, slug, summary, content, view_count, published_at, created_at, author_id')
     .eq('slug', slug)
     .eq('status', 'published')
     .single();

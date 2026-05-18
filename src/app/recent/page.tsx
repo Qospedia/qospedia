@@ -14,7 +14,7 @@ export default async function RecentPage() {
 
   const { data: articles } = await supabase
     .from('articles')
-    .select('*, author:profiles(full_name)')
+    .select('id, title, slug, summary, view_count, published_at')
     .eq('status', 'published')
     .order('published_at', { ascending: false })
     .limit(20);
@@ -39,7 +39,6 @@ export default async function RecentPage() {
                         <p className="mt-2 text-muted-foreground line-clamp-2">{article.summary}</p>
                       )}
                       <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-                        {article.author?.full_name && <span>by {article.author.full_name}</span>}
                         <span>{article.view_count} views</span>
                       </div>
                     </div>
