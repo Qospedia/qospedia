@@ -74,7 +74,7 @@ function Navbar() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-serif text-2xl font-bold text-white">Qospedia</span>
+            <span style="font-family: 'Playfair Display', Georgia, serif; font-size: 1.5rem; font-weight: bold; color: white;">Q</span><span style="font-family: 'Source Serif 4', Georgia, serif; font-size: 1.5rem; font-weight: normal; color: white;">ospedia</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (

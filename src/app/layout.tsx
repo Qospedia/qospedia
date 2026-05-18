@@ -22,6 +22,10 @@ export const metadata: Metadata = {
   title: 'Qospedia - Your Knowledge Platform',
   description: 'A modern encyclopedia with AI-powered features. Discover, learn, and contribute knowledge.',
   keywords: ['encyclopedia', 'knowledge', 'ai', 'articles', 'learning'],
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
   openGraph: {
     title: 'Qospedia - Your Knowledge Platform',
     description: 'A modern encyclopedia with AI-powered features.',
