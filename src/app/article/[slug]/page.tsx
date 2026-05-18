@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Clock, Eye, User, Edit, ThumbsUp } from 'lucide-react';
+import { Clock, Eye, Edit, ThumbsUp } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,12 +80,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             )}
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-              {article.author?.full_name && (
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>{article.author.full_name}</span>
-                </div>
-              )}
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span>Published {article.published_at ? formatDate(article.published_at) : formatDate(article.created_at)}</span>
