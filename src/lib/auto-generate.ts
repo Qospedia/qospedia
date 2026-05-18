@@ -83,7 +83,7 @@ Write in a neutral, informative tone suitable for an encyclopedia.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -124,11 +124,11 @@ Write in a neutral, informative tone suitable for an encyclopedia.`;
     });
 
     if (error) {
-      console.log('[AutoGenerate] Insert error:', error.message);
+      console.log('[AutoGenerate] Insert error:', JSON.stringify(error));
       return { success: false, generated: 0 };
     }
 
-    console.log(`[AutoGenerate] Successfully created article: ${topic}`);
+    console.log(`[AutoGenerate] Successfully created article: ${topic} with slug: ${slug}`);
     return { success: true, generated: 1 };
 
   } catch (err) {

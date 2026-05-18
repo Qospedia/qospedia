@@ -56,25 +56,54 @@ async function SearchResults({ query }: { query: string }) {
 
   // Import the generate function dynamically to avoid build issues
   let generationError = '';
+  let generationSuccess = false;
   let generatedArticle = null;
 
   try {
     const { autoGenerateArticles } = await import('@/lib/auto-generate');
     const result = await autoGenerateArticles(query);
     
-    console.log('[Search] Generation result:', result);
+    console.log('[Search] Generation result:', JSON.stringify(result));
+    generationSuccess = result.success;
 
     if (result.generated > 0) {
-      // Fetch the newly created article
-      const { data: newArticles } = await supabase
+      // Fetch the newly created article - try title first, then slug
+      const slug = query.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      
+      let { data: newArticles } = await supabase
         .from('articles')
         .select('*, author:profiles(full_name)')
         .eq('status', 'published')
-        .ilike('title', searchTerm)
+        .eq('slug', slug)
         .limit(1);
+
+      if (!newArticles || newArticles.length === 0) {
+        // Try title search as fallback
+        const { data: titleArticles } = await supabase
+          .from('articles')
+          .select('*, author:profiles(full_name)')
+          .eq('status', 'published')
+          .ilike('title', searchTerm)
+          .limit(1);
+        newArticles = titleArticles;
+      }
+
+      // Last resort: get most recent article
+      if (!newArticles || newArticles.length === 0) {
+        const { data: recentArticles } = await supabase
+          .from('articles')
+          .select('*, author:profiles(full_name)')
+          .eq('status', 'published')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        newArticles = recentArticles;
+      }
 
       if (newArticles && newArticles.length > 0) {
         generatedArticle = newArticles[0];
+        console.log('[Search] Found generated article:', generatedArticle.title, generatedArticle.slug);
+      } else {
+        console.log('[Search] Article not found after generation!');
       }
     }
   } catch (err: any) {
@@ -113,9 +142,16 @@ async function SearchResults({ query }: { query: string }) {
           <span>AI generation failed: {generationError}</span>
         </div>
       )}
-      <p className="text-sm text-muted-foreground">
-        Make sure GROQ_API_KEY is configured in your environment.
-      </p>
+      {generationSuccess && !generatedArticle && (
+        <p className="text-sm text-amber-600 mb-2">
+          Article was generated but couldn't be retrieved. Check database or try again.
+        </p>
+      )}
+      {!generationSuccess && !generationError && (
+        <p className="text-sm text-muted-foreground">
+          Make sure GROQ_API_KEY is configured in your environment.
+        </p>
+      )}
     </div>
   );
 }
