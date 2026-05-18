@@ -48,7 +48,7 @@ export function ThemeToggle() {
   );
 }
 
-export function Navbar() {
+export function Navbar({ showSearch = true }: { showSearch?: boolean }) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -67,60 +67,86 @@ export function Navbar() {
     });
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isDropdownOpen) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('[data-dropdown]')) {
+          setIsDropdownOpen(false);
+        }
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isDropdownOpen]);
+
   return (
     <header className="sticky top-0 z-50 bg-[#FCFCFC] dark:bg-[#050505] border-b border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
       <div className="container mx-auto flex h-[60px] items-center justify-between px-4">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-[20px] font-semibold text-[#050505] dark:text-[#FCFCFC] tracking-tight" style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}>
+          <Link href="/" className={cn(
+            "font-semibold tracking-tight transition-all",
+            isHomepage ? 'text-[28px]' : 'text-[20px]',
+            "text-[#050505] dark:text-[#FCFCFC]"
+          )} style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}>
             Qospedia
           </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => (
-              <Link 
-                key={link.href} 
-                href={link.href} 
-                className={cn(
-                  'text-[14px] font-medium transition-colors',
-                  pathname === link.href ? 'text-[#2563EB]' : 'text-[#636363] dark:text-[#858585] hover:text-[#050505] dark:hover:text-[#FCFCFC]'
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          {!isHomepage && (
+            <nav className="hidden md:flex items-center gap-6">
+              {navLinks.map((link) => (
+                <Link 
+                  key={link.href} 
+                  href={link.href} 
+                  className={cn(
+                    'text-[14px] font-medium transition-colors',
+                    pathname === link.href ? 'text-[#2563EB]' : 'text-[#636363] dark:text-[#858585] hover:text-[#050505] dark:hover:text-[#FCFCFC]'
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          )}
         </div>
 
-        {!isHomepage && (
+        {!isHomepage && showSearch && (
           <div className="hidden lg:flex flex-1 max-w-xl mx-8">
             <SearchBar showVoice className="w-full" />
           </div>
         )}
 
         <div className="flex items-center gap-3">
-          {isHomepage && (
+          {isHomepage && showSearch && (
             <div className="hidden lg:block">
               <SearchBar showVoice className="w-80" />
             </div>
           )}
           
-          <Link href="/suggest">
-            <Button variant="ghost" size="sm" className="text-[#636363] dark:text-[#858585] hover:bg-[rgba(5,5,5,0.05)] dark:hover:bg-[rgba(252,252,252,0.1)] hidden md:flex">
-              Suggest
-            </Button>
-          </Link>
+          {!isHomepage && (
+            <Link href="/suggest">
+              <Button variant="ghost" size="sm" className="text-[#636363] dark:text-[#858585] hover:bg-[rgba(5,5,5,0.05)] dark:hover:bg-[rgba(252,252,252,0.1)] hidden md:flex">
+                Suggest
+              </Button>
+            </Link>
+          )}
 
           <ThemeToggle />
 
           {user ? (
-            <div className="relative">
-              <Button variant="ghost" size="icon" onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="text-[#636363] dark:text-[#858585] hover:bg-[rgba(5,5,5,0.05)] dark:hover:bg-[rgba(252,252,252,0.1)]">
+            <div className="relative" data-dropdown>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)} 
+                className="text-[#636363] dark:text-[#858585] hover:bg-[rgba(5,5,5,0.05)] dark:hover:bg-[rgba(252,252,252,0.1)]"
+              >
                 <User className="h-5 w-5" />
               </Button>
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-lg border border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#FCFCFC] dark:bg-[#1A1A1A] shadow-[rgba(0,0,0,0.25)_0px_25px_50px_-12px]">
+                <div className="absolute right-0 mt-2 w-56 rounded-lg border border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#FCFCFC] dark:bg-[#1A1A1A] shadow-[rgba(0,0,0,0.25)_0px_25px_50px_-12px] z-[60]">
                   <div className="p-3 border-b border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
                     <p className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">{profile?.full_name || user.email}</p>
-                    <p className="text-[12px] text-[#858585] dark:text-[#636363]">{profile?.role}</p>
+                    <p className="text-[12px] text-[#858585] dark:text-[#636363] capitalize">{profile?.role}</p>
                   </div>
                   <div className="p-1">
                     {profile?.role === 'editor' || profile?.role === 'admin' ? (

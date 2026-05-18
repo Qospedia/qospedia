@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Mic, Send, X, TrendingUp, Clock } from 'lucide-react';
+import { Search, Mic, X, TrendingUp, Clock } from 'lucide-react';
 import { Input } from './input';
 import { cn } from '@/lib/utils';
 
@@ -11,31 +11,58 @@ const TRENDING_TOPICS = [
   'CRISPR Gene Editing',
   'SpaceX Starship',
   'AI Ethics',
-  'Climate Change Solutions',
-  'Blockchain Technology',
+  'Climate Change',
+  'Blockchain',
 ];
+
+interface SearchBarProps {
+  className?: string;
+  inputClassName?: string;
+  showVoice?: boolean;
+  autoFocus?: boolean;
+}
 
 export function SearchBar({ 
   className, 
   inputClassName,
   showVoice = false,
   autoFocus = false
-}: { 
-  className?: string; 
-  inputClassName?: string;
-  showVoice?: boolean;
-  autoFocus?: boolean;
-}) {
+}: SearchBarProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('recentSearches');
     if (stored) {
       setRecentSearches(JSON.parse(stored));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setQuery(transcript);
+        setIsListening(false);
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognitionRef.current.onerror = () => {
+        setIsListening(false);
+      };
     }
   }, []);
 
@@ -57,6 +84,21 @@ export function SearchBar({
     handleSearch(query);
   };
 
+  const handleVoiceClick = () => {
+    if (!recognitionRef.current) {
+      alert('Voice recognition not supported in your browser');
+      return;
+    }
+    
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
+  };
+
   const removeRecentSearch = (search: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updated = recentSearches.filter(s => s !== search);
@@ -68,12 +110,10 @@ export function SearchBar({
     handleSearch(topic);
   };
 
-  const showDropdown = isFocused && (query.length === 0 || !isFocused);
-
   return (
     <div className={cn('relative', className)}>
       <form onSubmit={handleSubmit} className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#858585] dark:text-[#636363] z-10" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#858585] dark:text-[#636363] z-10 pointer-events-none" />
         <Input
           ref={inputRef}
           type="search"
@@ -101,21 +141,30 @@ export function SearchBar({
           {showVoice && (
             <button
               type="button"
-              className="p-1.5 hover:bg-[rgba(5,5,5,0.1)] dark:hover:bg-[rgba(252,252,252,0.1)] rounded-md transition-colors"
+              onClick={handleVoiceClick}
+              className={cn(
+                'p-1.5 rounded-md transition-colors',
+                isListening 
+                  ? 'bg-[#EF4444] text-white' 
+                  : 'hover:bg-[rgba(5,5,5,0.1)] dark:hover:bg-[rgba(252,252,252,0.1)] text-[#858585] dark:text-[#636363]'
+              )}
             >
-              <Mic className="h-4 w-4 text-[#858585] dark:text-[#636363]" />
+              <Mic className={cn('h-4 w-4', isListening && 'animate-pulse')} />
             </button>
           )}
           <button
             type="submit"
             className="p-1.5 bg-[#050505] dark:bg-[#FCFCFC] rounded-md hover:bg-[#1a1a1a] dark:hover:bg-[#E5E7EB] transition-colors"
           >
-            <Send className="h-4 w-4 text-[#FCFCFC] dark:text-[#050505]" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#FCFCFC] dark:text-[#050505] rotate-45 -mt-0.5">
+              <line x1="12" x2="12" y1="19" y2="5"></line>
+              <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
           </button>
         </div>
       </form>
 
-      {showDropdown && (recentSearches.length > 0 || !query) && (
+      {isFocused && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-[#FCFCFC] dark:bg-[#0A0A0A] border border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] rounded-lg shadow-lg z-50 overflow-hidden">
           {recentSearches.length > 0 && (
             <div className="p-3 border-b border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">

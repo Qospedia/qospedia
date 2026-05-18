@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,7 +16,6 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -52,14 +52,19 @@ export default function SignupPage() {
       }
 
       if (data.user) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData.session) {
-          router.push('/');
-          router.refresh();
-        } else {
-          setSuccess('Account created! Please check your email to verify, then sign in.');
-          setTimeout(() => router.push('/auth/login'), 2000);
+        const { error: profileError } = await supabase.from('profiles').insert({
+          id: data.user.id,
+          email: data.user.email,
+          full_name: fullName,
+          role: 'user'
+        });
+        
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
         }
+        
+        setSuccess('Account created successfully! Redirecting...');
+        setTimeout(() => router.push('/'), 1500);
       }
     } catch (err: any) {
       setError(err.message || 'Signup failed');
@@ -67,79 +72,71 @@ export default function SignupPage() {
     setLoading(false);
   };
 
-  const handleGoogleSignup = async () => {
-    setError('');
-    setGoogleLoading(true);
-    
-    try {
-      const supabase = createClient();
-      const siteUrl = 'https://qospedia.vercel.app';
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { 
-          redirectTo: `${siteUrl}/auth/callback`,
-        },
-      });
-      
-      if (error) {
-        setError(error.message);
-        setGoogleLoading(false);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Google signup failed');
-      setGoogleLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-[#FCFCFC] dark:bg-[#050505]">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#FCFCFC] dark:bg-[#0A0A0A]">
         <CardHeader className="text-center">
-          <CardTitle className="text-[20px] font-semibold text-[#050505]">Create Account</CardTitle>
-          <CardDescription className="text-[#636363]">Join Qospedia</CardDescription>
+          <CardTitle className="text-[20px] font-semibold text-[#050505] dark:text-[#FCFCFC]">Create Account</CardTitle>
+          <CardDescription className="text-[#636363] dark:text-[#858585]">Join Qospedia</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-[#FEF2F2] border border-[#EF4444] text-[#EF4444] text-[14px] rounded-lg">
+            <div className="mb-4 p-3 bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.1)] border border-[#EF4444] text-[#EF4444] text-[14px] rounded-lg">
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-4 p-3 bg-[#F0FDF4] border border-[#22C55E] text-[#22C55E] text-[14px] rounded-lg">
+            <div className="mb-4 p-3 bg-[#F0FDF4] dark:bg-[rgba(34,197,94,0.1)] border border-[#22C55E] text-[#22C55E] text-[14px] rounded-lg">
               {success}
             </div>
           )}
           
-          <Button type="button" variant="outline" className="w-full mb-4" onClick={handleGoogleSignup} disabled={googleLoading}>
-            {googleLoading ? 'Connecting...' : 'Sign up with Google'}
-          </Button>
-          
-          <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-[#E5E7EB]" /></div>
-            <div className="relative flex justify-center text-[12px]"><span className="bg-[#FCFCFC] px-2 text-[#636363]">Or</span></div>
-          </div>
-          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="fullName" className="text-[14px] font-medium text-[#050505]">Full Name</Label>
-              <Input id="fullName" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="mt-1" />
+              <Label htmlFor="fullName" className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">Full Name</Label>
+              <Input 
+                id="fullName" 
+                type="text" 
+                value={fullName} 
+                onChange={(e) => setFullName(e.target.value)} 
+                required 
+                className="mt-1 bg-[#F7F7F7] dark:bg-[#1A1A1A] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] text-[#050505] dark:text-[#FCFCFC]" 
+              />
             </div>
             <div>
-              <Label htmlFor="email" className="text-[14px] font-medium text-[#050505]">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" />
+              <Label htmlFor="email" className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">Email</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+                className="mt-1 bg-[#F7F7F7] dark:bg-[#1A1A1A] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] text-[#050505] dark:text-[#FCFCFC]" 
+              />
             </div>
             <div>
-              <Label htmlFor="password" className="text-[14px] font-medium text-[#050505]">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="mt-1" />
+              <Label htmlFor="password" className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">Password</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+                minLength={6} 
+                className="mt-1 bg-[#F7F7F7] dark:bg-[#1A1A1A] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] text-[#050505] dark:text-[#FCFCFC]" 
+              />
             </div>
-            <Button type="submit" className="w-full bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full bg-[#050505] dark:bg-[#FCFCFC] text-[#FCFCFC] dark:text-[#050505] hover:bg-[#1a1a1a] dark:hover:bg-[#E5E7EB]" 
+              disabled={loading}
+            >
               {loading ? 'Creating...' : 'Sign Up'}
             </Button>
           </form>
           
           <div className="mt-4 text-center text-[14px]">
-            <span className="text-[#636363]">Already have an account? </span>
+            <span className="text-[#636363] dark:text-[#858585]">Already have an account? </span>
             <Link href="/auth/login" className="text-[#2563EB] hover:underline">Sign in</Link>
           </div>
         </CardContent>

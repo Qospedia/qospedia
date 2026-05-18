@@ -30,9 +30,9 @@ export default function HomePage() {
         </header>
 
         <main className="flex-1 flex items-center justify-center px-4">
-          <div className="w-full max-w-2xl text-center space-y-8">
+          <div className="w-full max-w-2xl text-center space-y-10">
             <h1 
-              className="text-[32px] font-semibold text-[#050505] dark:text-[#FCFCFC] tracking-tight" 
+              className="text-[56px] font-semibold text-[#050505] dark:text-[#FCFCFC] tracking-tight" 
               style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}
             >
               Qospedia
@@ -40,6 +40,9 @@ export default function HomePage() {
             <div className="max-w-xl mx-auto">
               <SearchBar showVoice autoFocus />
             </div>
+            <p className="text-[16px] text-[#636363] dark:text-[#858585]">
+              Your knowledge base, powered by AI
+            </p>
           </div>
         </main>
 

@@ -14,7 +14,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -33,7 +32,8 @@ export default function LoginPage() {
     
     try {
       const supabase = createClient();
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ 
+      
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
         email, 
         password 
       });
@@ -44,7 +44,26 @@ export default function LoginPage() {
         return;
       }
 
-      if (data.user) {
+      if (authData.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+        
+        if (profileError && profileError.code === 'PGRST116') {
+          const { error: createError } = await supabase.from('profiles').insert({
+            id: authData.user.id,
+            email: authData.user.email,
+            full_name: authData.user.user_metadata?.full_name || '',
+            role: 'user'
+          });
+          
+          if (createError) {
+            console.error('Profile creation error:', createError);
+          }
+        }
+        
         router.push('/');
         router.refresh();
       }
@@ -54,83 +73,55 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setError('');
-    setGoogleLoading(true);
-    
-    try {
-      const supabase = createClient();
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { 
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      
-      if (error) {
-        setError(error.message);
-        setGoogleLoading(false);
-      }
-    } catch (err: any) {
-      setError(err.message || 'Google login failed');
-      setGoogleLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-[#FCFCFC] dark:bg-[#050505]">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#FCFCFC] dark:bg-[#0A0A0A]">
         <CardHeader className="text-center">
-          <CardTitle className="text-[20px] font-semibold text-[#050505]">Welcome Back</CardTitle>
-          <CardDescription className="text-[#636363]">Sign in to Qospedia</CardDescription>
+          <CardTitle className="text-[20px] font-semibold text-[#050505] dark:text-[#FCFCFC]">Welcome Back</CardTitle>
+          <CardDescription className="text-[#636363] dark:text-[#858585]">Sign in to Qospedia</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-[#FEF2F2] border border-[#EF4444] text-[#EF4444] text-[14px] rounded-lg">
+            <div className="mb-4 p-3 bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.1)] border border-[#EF4444] text-[#EF4444] text-[14px] rounded-lg">
               {error}
             </div>
           )}
           
-          <Button type="button" variant="outline" className="w-full mb-4" onClick={handleGoogleLogin} disabled={googleLoading}>
-            {googleLoading ? 'Connecting...' : 'Sign in with Google'}
-          </Button>
-          
-          <div className="relative mb-4">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-[#E5E7EB]" /></div>
-            <div className="relative flex justify-center text-[12px]"><span className="bg-[#FCFCFC] px-2 text-[#636363]">Or</span></div>
-          </div>
-          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email" className="text-[14px] font-medium text-[#050505]">Email</Label>
+              <Label htmlFor="email" className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">Email</Label>
               <Input 
                 id="email" 
                 type="email" 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 required 
-                className="mt-1" 
+                className="mt-1 bg-[#F7F7F7] dark:bg-[#1A1A1A] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] text-[#050505] dark:text-[#FCFCFC]" 
               />
             </div>
             <div>
-              <Label htmlFor="password" className="text-[14px] font-medium text-[#050505]">Password</Label>
+              <Label htmlFor="password" className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">Password</Label>
               <Input 
                 id="password" 
                 type="password" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
-                className="mt-1" 
+                className="mt-1 bg-[#F7F7F7] dark:bg-[#1A1A1A] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] text-[#050505] dark:text-[#FCFCFC]" 
               />
             </div>
-            <Button type="submit" className="w-full bg-[#050505] text-[#FCFCFC] hover:bg-[#1a1a1a]" disabled={loading}>
+            <Button type="submit" className="w-full bg-[#050505] dark:bg-[#FCFCFC] text-[#FCFCFC] dark:text-[#050505] hover:bg-[#1a1a1a] dark:hover:bg-[#E5E7EB]" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
           
           <div className="mt-4 text-center text-[14px]">
-            <span className="text-[#636363]">Don't have an account? </span>
+            <span className="text-[#636363] dark:text-[#858585]">Forgot your password? </span>
+            <Link href="/auth/reset-password" className="text-[#2563EB] hover:underline">Reset it</Link>
+          </div>
+          
+          <div className="mt-4 text-center text-[14px]">
+            <span className="text-[#636363] dark:text-[#858585]">Don't have an account? </span>
             <Link href="/auth/signup" className="text-[#2563EB] hover:underline">Sign up</Link>
           </div>
         </CardContent>

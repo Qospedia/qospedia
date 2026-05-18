@@ -37,8 +37,12 @@ function AuthCallbackContent() {
         }
 
         if (session) {
-          setStatus('Success! Redirecting...');
-          router.push('/');
+          const next = searchParams.get('next');
+          if (next) {
+            router.push(next);
+          } else {
+            router.push('/');
+          }
           router.refresh();
         } else {
           const code = searchParams.get('code');
@@ -51,7 +55,12 @@ function AuthCallbackContent() {
               setStatus('Error exchanging code. Redirecting...');
               setTimeout(() => router.push('/auth/login'), 3000);
             } else if (sessionData?.session) {
-              router.push('/');
+              const next = searchParams.get('next');
+              if (next) {
+                router.push(next);
+              } else {
+                router.push('/');
+              }
               router.refresh();
             }
           } else {
