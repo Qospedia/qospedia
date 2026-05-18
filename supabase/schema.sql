@@ -85,20 +85,18 @@ CREATE TABLE IF NOT EXISTS moderation_log (
 );
 
 -- Indexes for Performance
-CREATE INDEX idx_articles_slug ON articles(slug);
-CREATE INDEX idx_articles_status ON articles(status);
-CREATE INDEX idx_articles_author ON articles(author_id);
-CREATE INDEX idx_articles_published ON articles(published_at) WHERE status = 'published';
-CREATE INDEX idx_revisions_article ON article_revisions(article_id);
-CREATE INDEX idx_categories_slug ON categories(slug);
-CREATE INDEX idx_profiles_role ON profiles(role);
+CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);
+CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status);
+CREATE INDEX IF NOT EXISTS idx_articles_author ON articles(author_id);
+CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published_at) WHERE status = 'published';
+CREATE INDEX IF NOT EXISTS idx_revisions_article ON article_revisions(article_id);
+CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 
 -- Full Text Search Index for Articles
-CREATE INDEX idx_articles_search ON articles USING gin(
+CREATE INDEX IF NOT EXISTS idx_articles_search ON articles USING gin(
   to_tsvector('english', coalesce(title, '') || ' ' || coalesce(content, ''))
 );
-
--- RLS Policies
 
 -- Enable RLS on all tables
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -110,107 +108,107 @@ ALTER TABLE citations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE moderation_log ENABLE ROW LEVEL SECURITY;
 
 -- Profiles Policies
-CREATE POLICY "Public profiles are viewable by everyone" ON profiles
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
+CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
 
-CREATE POLICY "Users can update own profile" ON profiles
-  FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY "Admins can manage all profiles" ON profiles
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+DROP POLICY IF EXISTS "Admins can manage all profiles" ON profiles;
+CREATE POLICY "Admins can manage all profiles" ON profiles FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
 -- Categories Policies
-CREATE POLICY "Categories are public" ON categories
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Categories are public" ON categories;
+CREATE POLICY "Categories are public" ON categories FOR SELECT USING (true);
 
-CREATE POLICY "Editors can manage categories" ON categories
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
-  );
+DROP POLICY IF EXISTS "Editors can manage categories" ON categories;
+CREATE POLICY "Editors can manage categories" ON categories FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
+);
 
 -- Articles Policies
-CREATE POLICY "Published articles are viewable by everyone" ON articles
-  FOR SELECT USING (status = 'published');
+DROP POLICY IF EXISTS "Published articles are viewable by everyone" ON articles;
+CREATE POLICY "Published articles are viewable by everyone" ON articles FOR SELECT USING (status = 'published');
 
-CREATE POLICY "Own drafts are viewable by author" ON articles
-  FOR SELECT USING (
-    status = 'draft' AND author_id = auth.uid()
-  );
+DROP POLICY IF EXISTS "Own drafts are viewable by author" ON articles;
+CREATE POLICY "Own drafts are viewable by author" ON articles FOR SELECT USING (
+  status = 'draft' AND author_id = auth.uid()
+);
 
-CREATE POLICY "Editors can view all articles" ON articles
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
-  );
+DROP POLICY IF EXISTS "Editors can view all articles" ON articles;
+CREATE POLICY "Editors can view all articles" ON articles FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
+);
 
-CREATE POLICY "Users can insert own articles" ON articles
-  FOR INSERT WITH CHECK (author_id = auth.uid());
+DROP POLICY IF EXISTS "Users can insert own articles" ON articles;
+CREATE POLICY "Users can insert own articles" ON articles FOR INSERT WITH CHECK (author_id = auth.uid());
 
-CREATE POLICY "Own articles can be updated by author" ON articles
-  FOR UPDATE USING (author_id = auth.uid());
+DROP POLICY IF EXISTS "Own articles can be updated by author" ON articles;
+CREATE POLICY "Own articles can be updated by author" ON articles FOR UPDATE USING (author_id = auth.uid());
 
-CREATE POLICY "Editors can update any article" ON articles
-  FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
-  );
+DROP POLICY IF EXISTS "Editors can update any article" ON articles;
+CREATE POLICY "Editors can update any article" ON articles FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
+);
 
-CREATE POLICY "Admins can delete articles" ON articles
-  FOR DELETE USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+DROP POLICY IF EXISTS "Admins can delete articles" ON articles;
+CREATE POLICY "Admins can delete articles" ON articles FOR DELETE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
 -- Article Revisions Policies
-CREATE POLICY "Revisions for published articles are public" ON article_revisions
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM articles WHERE id = article_revisions.article_id AND status = 'published')
-  );
+DROP POLICY IF EXISTS "Revisions for published articles are public" ON article_revisions;
+CREATE POLICY "Revisions for published articles are public" ON article_revisions FOR SELECT USING (
+  EXISTS (SELECT 1 FROM articles WHERE id = article_revisions.article_id AND status = 'published')
+);
 
-CREATE POLICY "Authors can view own article revisions" ON article_revisions
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM articles WHERE id = article_revisions.article_id AND author_id = auth.uid())
-  );
+DROP POLICY IF EXISTS "Authors can view own article revisions" ON article_revisions;
+CREATE POLICY "Authors can view own article revisions" ON article_revisions FOR SELECT USING (
+  EXISTS (SELECT 1 FROM articles WHERE id = article_revisions.article_id AND author_id = auth.uid())
+);
 
-CREATE POLICY "Editors can view all revisions" ON article_revisions
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
-  );
+DROP POLICY IF EXISTS "Editors can view all revisions" ON article_revisions;
+CREATE POLICY "Editors can view all revisions" ON article_revisions FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
+);
 
-CREATE POLICY "Editors can create revisions" ON article_revisions
-  FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
-  );
+DROP POLICY IF EXISTS "Editors can create revisions" ON article_revisions;
+CREATE POLICY "Editors can create revisions" ON article_revisions FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
+);
 
 -- Article Categories Policies
-CREATE POLICY "Article categories are public" ON article_categories
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Article categories are public" ON article_categories;
+CREATE POLICY "Article categories are public" ON article_categories FOR SELECT USING (true);
 
-CREATE POLICY "Editors can manage article categories" ON article_categories
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
-  );
+DROP POLICY IF EXISTS "Editors can manage article categories" ON article_categories;
+CREATE POLICY "Editors can manage article categories" ON article_categories FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
+);
 
 -- Citations Policies
-CREATE POLICY "Citations for published articles are public" ON citations
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM articles WHERE id = citations.article_id AND status = 'published')
-  );
+DROP POLICY IF EXISTS "Citations for published articles are public" ON citations;
+CREATE POLICY "Citations for published articles are public" ON citations FOR SELECT USING (
+  EXISTS (SELECT 1 FROM articles WHERE id = citations.article_id AND status = 'published')
+);
 
-CREATE POLICY "Editors can manage citations" ON citations
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
-  );
+DROP POLICY IF EXISTS "Editors can manage citations" ON citations;
+CREATE POLICY "Editors can manage citations" ON citations FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('editor', 'admin'))
+);
 
 -- Moderation Log Policies
-CREATE POLICY "Admins can view moderation log" ON moderation_log
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+DROP POLICY IF EXISTS "Admins can view moderation log" ON moderation_log;
+CREATE POLICY "Admins can view moderation log" ON moderation_log FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
-CREATE POLICY "Admins can insert moderation logs" ON moderation_log
-  FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+DROP POLICY IF EXISTS "Admins can insert moderation logs" ON moderation_log;
+CREATE POLICY "Admins can insert moderation logs" ON moderation_log FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
 -- Function to handle new user creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -220,7 +218,7 @@ BEGIN
   VALUES (
     NEW.id,
     NEW.email,
-    NEW.raw_user_meta_data->>'full_name',
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
     COALESCE(NEW.raw_user_meta_data->>'role', 'reader')::user_role
   );
   RETURN NEW;
@@ -232,6 +230,11 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Create a system profile for AI-generated articles
+INSERT INTO profiles (id, email, full_name, role)
+VALUES ('00000000-0000-0000-0000-000000000001', 'system@qospedia.local', 'Qospedia AI', 'editor')
+ON CONFLICT (id) DO NOTHING;
 
 -- Default Categories Data
 INSERT INTO categories (name, slug, description, icon) VALUES
