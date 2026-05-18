@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { Search as SearchIcon, FileText, Loader2, AlertCircle, Sparkles, Database } from 'lucide-react';
+import { Search as SearchIcon, FileText, Loader2, AlertCircle, Sparkles, Database, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -20,7 +20,7 @@ async function SearchResults({ query }: { query: string }) {
   const supabase = await createClient();
   const searchTerm = `%${query}%`;
 
-  let dbError: string | null = null;
+  let dbReady = false;
   let articles: any[] = [];
 
   try {
@@ -32,30 +32,35 @@ async function SearchResults({ query }: { query: string }) {
       .order('view_count', { ascending: false })
       .limit(20);
 
-    if (error) {
-      console.error('[Search] Database error:', error);
-      dbError = error.message;
-    } else {
-      articles = data || [];
+    if (!error && data) {
+      dbReady = true;
+      articles = data;
     }
-  } catch (e: any) {
-    console.error('[Search] Database connection error:', e);
-    dbError = 'Database connection failed. Please ensure the schema is properly configured.';
+  } catch {
+    dbReady = false;
   }
 
-  if (dbError) {
+  if (!dbReady) {
     return (
       <div className="text-center py-12">
-        <Database className="mx-auto h-12 w-12 text-red-400 mb-4" />
-        <h2 className="text-xl font-semibold text-foreground mb-2">Database Not Configured</h2>
-        <p className="text-muted-foreground mb-4">The articles table doesn't exist yet.</p>
-        <p className="text-sm text-muted-foreground mb-6">Please run the schema.sql file in your Supabase dashboard to create the required tables.</p>
-        <div className="bg-muted p-4 rounded-lg max-w-xl mx-auto text-left">
-          <p className="text-sm font-mono text-muted-foreground">
-            1. Go to your Supabase project dashboard<br/>
-            2. Open the SQL Editor<br/>
-            3. Run the contents of supabase/schema.sql
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 max-w-2xl mx-auto">
+          <div className="flex items-center gap-3 text-amber-700 mb-4">
+            <Database className="h-8 w-8" />
+            <h2 className="text-xl font-semibold">Database Setup Required</h2>
+          </div>
+          <p className="text-amber-700 mb-4">
+            The database schema hasn't been set up yet. You need to run the SQL schema before articles can be created.
           </p>
+          <div className="bg-white/50 rounded-lg p-4 text-left space-y-2">
+            <p className="font-medium text-sm">Quick Setup:</p>
+            <ol className="text-sm text-amber-800 space-y-1 list-decimal list-inside">
+              <li>Go to your <a href="https://supabase.com/dashboard" target="_blank" className="underline">Supabase Dashboard</a></li>
+              <li>Select your project</li>
+              <li>Click <strong>SQL Editor</strong> in the sidebar</li>
+              <li>Copy & paste the contents of <code className="bg-amber-100 px-1 rounded">supabase/schema.sql</code></li>
+              <li>Click <strong>Run</strong> to execute</li>
+            </ol>
+          </div>
         </div>
       </div>
     );
@@ -84,24 +89,7 @@ async function SearchResults({ query }: { query: string }) {
   }
 
   console.log(`[Search] No articles for "${query}", generating...`);
-
-  return (
-    <div className="text-center py-12">
-      <div className="flex flex-col items-center gap-4">
-        <div className="animate-pulse">
-          <Sparkles className="h-12 w-12 text-accent" />
-        </div>
-        <p className="text-lg text-muted-foreground">
-          Creating new article for "{query}"...
-        </p>
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-accent" />
-          <span className="text-sm text-muted-foreground">Generating with AI...</span>
-        </div>
-      </div>
-      <GeneratingArticle query={query} />
-    </div>
-  );
+  return <GeneratingArticle query={query} />;
 }
 
 async function GeneratingArticle({ query }: { query: string }) {
@@ -122,7 +110,7 @@ async function GeneratingArticle({ query }: { query: string }) {
   if (generationResult.success && generationResult.generated > 0) {
     const slug = query.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     
-    let { data: newArticle, error } = await supabase
+    let { data: newArticle } = await supabase
       .from('articles')
       .select('*, author:profiles(full_name)')
       .eq('status', 'published')
@@ -153,7 +141,7 @@ async function GeneratingArticle({ query }: { query: string }) {
       return (
         <>
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-700 font-medium">✓ New article automatically created for "{query}"</p>
+            <p className="text-green-700 font-medium">✓ New article created for "{query}"</p>
           </div>
           <Link href={`/article/${newArticle[0].slug}`}>
             <Card className="transition-all hover:shadow-md border-green-500 max-w-xl mx-auto">
@@ -169,23 +157,30 @@ async function GeneratingArticle({ query }: { query: string }) {
     }
   }
 
-  if (generationResult.error) {
-    return (
-      <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg max-w-xl mx-auto">
-        <div className="flex items-center gap-2 text-red-700">
-          <AlertCircle className="h-5 w-5" />
-          <span className="font-medium">Article generation failed</span>
-        </div>
-        <p className="text-sm text-red-600 mt-2">{generationResult.error}</p>
-        <p className="text-xs text-red-500 mt-2">Please check your API keys configuration or try again later.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg max-w-xl mx-auto">
-      <p className="text-amber-700 font-medium">Article creation in progress...</p>
-      <p className="text-sm text-amber-600 mt-1">The article may take a moment to appear. Please refresh the page shortly.</p>
+    <div className="text-center py-8">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-pulse">
+          <Sparkles className="h-12 w-12 text-accent" />
+        </div>
+        <p className="text-lg text-muted-foreground">
+          Generating article for "{query}"...
+        </p>
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
+          <span className="text-sm text-muted-foreground">Powered by Groq AI</span>
+        </div>
+      </div>
+      
+      {generationResult.error && (
+        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg max-w-xl mx-auto">
+          <div className="flex items-center gap-2 text-red-700 mb-2">
+            <AlertCircle className="h-5 w-5" />
+            <span className="font-medium">Generation Failed</span>
+          </div>
+          <p className="text-sm text-red-600">{generationResult.error}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -221,7 +216,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         ) : (
           <div className="text-center py-12">
             <SearchIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-muted-foreground">Enter a search term</p>
+            <p className="mt-4 text-muted-foreground">Enter a search term to find or create articles</p>
           </div>
         )}
       </div>
