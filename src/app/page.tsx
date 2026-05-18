@@ -60,7 +60,7 @@ export default function HomePage() {
           <div className="w-full max-w-2xl text-center space-y-8">
             <h1 
               className="text-[32px] font-semibold text-[#050505] dark:text-[#FCFCFC] tracking-tight" 
-              style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}
+              style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}
             >
               Qospedia
             </h1>

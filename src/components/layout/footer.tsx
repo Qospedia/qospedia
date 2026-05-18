@@ -26,7 +26,7 @@ export function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1">
-            <Link href="/" className="text-[20px] font-semibold text-[#050505] dark:text-[#FCFCFC] tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>Qospedia</Link>
+            <Link href="/" className="text-[20px] font-semibold text-[#050505] dark:text-[#FCFCFC] tracking-tight" style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}>Qospedia</Link>
             <p className="mt-4 text-[14px] text-[#636363] dark:text-[#858585]">A modern encyclopedia with AI-powered features.</p>
             <div className="mt-4 text-[14px] text-[#636363] dark:text-[#858585]">
               <p><span className="font-medium text-[#050505] dark:text-[#FCFCFC]">Founder:</span> Shaurya Agarwal</p>

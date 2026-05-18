@@ -74,7 +74,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 bg-[#FCFCFC] dark:bg-[#050505] border-b border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
       <div className="container mx-auto flex h-[60px] items-center justify-between px-4">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-[20px] font-semibold text-[#050505] dark:text-[#FCFCFC] tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+          <Link href="/" className="text-[20px] font-semibold text-[#050505] dark:text-[#FCFCFC] tracking-tight" style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}>
             Qospedia
           </Link>
           <nav className="hidden md:flex items-center gap-6">
