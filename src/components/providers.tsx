@@ -1,75 +1,48 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { Profile } from '@/lib/types';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-interface ProfileContextType {
-  profile: Profile | null;
-  loading: boolean;
-  setProfile: (profile: Profile | null) => void;
+interface ThemeContextType {
+  isDark: boolean;
+  toggle: () => void;
 }
 
-const ProfileContext = createContext<ProfileContextType>({
-  profile: null,
-  loading: true,
-  setProfile: () => {},
+const ThemeContext = createContext<ThemeContextType>({
+  isDark: false,
+  toggle: () => {},
 });
 
-export function useProfile() {
-  return useContext(ProfileContext);
+export function useTheme() {
+  return useContext(ThemeContext);
 }
 
-interface ProvidersProps {
-  children: ReactNode;
-}
-
-export function Providers({ children }: ProvidersProps) {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+function ThemeProviderInner({ children }: { children: ReactNode }) {
+  const [isDark, setIsDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    async function fetchProfile() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      setProfile(profileData);
-      setLoading(false);
+    setMounted(true);
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      setIsDark(true);
+      document.documentElement.classList.add('dark');
     }
-
-    fetchProfile();
-
-    const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!session?.user) {
-        setProfile(null);
-      } else {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        setProfile(profileData);
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
+  const toggle = () => {
+    const newDark = !isDark;
+    setIsDark(newDark);
+    localStorage.setItem('theme', newDark ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', newDark);
+  };
+
   return (
-    <ProfileContext.Provider value={{ profile, loading, setProfile }}>
+    <ThemeContext.Provider value={{ isDark, toggle }}>
       {children}
-    </ProfileContext.Provider>
+    </ThemeContext.Provider>
   );
+}
+
+export function Providers({ children }: { children: ReactNode }) {
+  return <ThemeProviderInner>{children}</ThemeProviderInner>;
 }

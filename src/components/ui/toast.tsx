@@ -28,9 +28,9 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-[#E5E7EB] bg-[#FCFCFC] text-[#050505]',
-        destructive: 'border-[#EF4444] bg-[#FEF2F2] text-[#EF4444]',
-        success: 'border-[#22C55E] bg-[#F0FDF4] text-[#166534]',
+        default: 'border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#FCFCFC] dark:bg-[#1A1A1A] text-[#050505] dark:text-[#FCFCFC]',
+        destructive: 'border-[#EF4444] bg-[#FEF2F2] dark:bg-[rgba(239,68,68,0.2)] text-[#EF4444]',
+        success: 'border-[#22C55E] bg-[#F0FDF4] dark:bg-[rgba(34,197,94,0.2)] text-[#166534] dark:text-[#22C55E]',
       },
     },
     defaultVariants: {
@@ -61,7 +61,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      'inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[#E5E7EB] bg-transparent px-3 text-[14px] font-medium transition-colors hover:bg-[#F7F7F7] focus:outline-none focus:ring-2 focus:ring-[rgba(59,130,246,0.3)] focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+      'inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-transparent px-3 text-[14px] font-medium transition-colors hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)] focus:outline-none focus:ring-2 focus:ring-[rgba(59,130,246,0.3)] focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
       className
     )}
     {...props}
@@ -76,7 +76,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      'absolute right-2 top-2 rounded-md p-1 text-[#636363] opacity-0 transition-opacity hover:text-[#050505] focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
+      'absolute right-2 top-2 rounded-md p-1 text-[#636363] dark:text-[#858585] opacity-0 transition-opacity hover:text-[#050505] dark:hover:text-[#FCFCFC] focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
       className
     )}
     toast-close=""

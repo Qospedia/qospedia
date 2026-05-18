@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Footer } from '@/components/layout/footer';
 import { ToastProvider } from '@/components/ui/toast';
 import { Providers } from '@/components/providers';
-import { ThemeProvider } from '@/components/layout/header';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -29,13 +28,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen flex flex-col bg-[#FCFCFC] text-[#050505]">
+      <body className="min-h-screen flex flex-col bg-[#FCFCFC] dark:bg-[#050505] text-[#050505] dark:text-[#FCFCFC]">
         <Providers>
-          <ThemeProvider>
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <ToastProvider />
-          </ThemeProvider>
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <ToastProvider />
         </Providers>
       </body>
     </html>
