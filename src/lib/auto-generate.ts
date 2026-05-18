@@ -2,26 +2,40 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
-const JINA_API_KEY = process.env.JINA_API_KEY;
-
 interface SourceData {
   title: string;
   url: string;
   content: string;
 }
 
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
+function getGroqApiKey(): string {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) {
+    throw new Error('GROQ_API_KEY not configured');
+  }
+  return key;
+}
+
+function getTavilyApiKey(): string | undefined {
+  return process.env.TAVILY_API_KEY;
+}
+
+function getJinaApiKey(): string | undefined {
+  return process.env.JINA_API_KEY;
+}
+
 async function fetchWikipediaSummary(topic: string): Promise<string> {
   try {
     const res = await fetch(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topic)}`,
-      { headers: { 'Accept': 'application/json' } }
+      { headers: { 'Accept': 'application/json' }, next: { revalidate: 3600 } }
     );
     const data = await res.json();
     return data.extract || '';
@@ -32,13 +46,12 @@ async function fetchWikipediaSummary(topic: string): Promise<string> {
 
 async function fetchWithJina(url: string): Promise<string> {
   try {
-    const headers: Record<string, string> = {
-      'Accept': 'application/json',
-    };
-    if (JINA_API_KEY) {
-      headers['Authorization'] = `Bearer ${JINA_API_KEY}`;
+    const headers: Record<string, string> = { 'Accept': 'application/json' };
+    const jinaKey = getJinaApiKey();
+    if (jinaKey) {
+      headers['Authorization'] = `Bearer ${jinaKey}`;
     }
-    const res = await fetch(`https://r.jina.ai/${url}`, { headers });
+    const res = await fetch(`https://r.jina.ai/${url}`, { headers, next: { revalidate: 3600 } });
     const data = await res.json();
     return data.content || '';
   } catch {
@@ -47,14 +60,18 @@ async function fetchWithJina(url: string): Promise<string> {
 }
 
 async function fetchTavilyResearch(topic: string): Promise<SourceData[]> {
-  if (!TAVILY_API_KEY) return [];
+  const apiKey = getTavilyApiKey();
+  if (!apiKey) {
+    console.log('[Tavily] API key not configured, skipping...');
+    return [];
+  }
   
   try {
     const res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        api_key: TAVILY_API_KEY,
+        api_key: apiKey,
         query: topic,
         max_results: 5,
         include_answer: true,
@@ -66,7 +83,8 @@ async function fetchTavilyResearch(topic: string): Promise<SourceData[]> {
       url: r.url,
       content: r.content,
     }));
-  } catch {
+  } catch (e) {
+    console.log('[Tavily] Search failed:', e);
     return [];
   }
 }
@@ -76,41 +94,38 @@ async function fetchWebSearchSources(topic: string): Promise<SourceData[]> {
   
   const authoritativeSources = [
     `https://en.wikipedia.org/wiki/${encodeURIComponent(topic.replace(/ /g, '_'))}`,
-    `https://www.britannica.com/search?query=${encodeURIComponent(topic)}`,
   ];
 
   for (const url of authoritativeSources) {
-    const content = await fetchWithJina(url);
-    if (content && content.length > 100) {
-      const titleMatch = content.match(/^#\s+(.+)$/m) || ['', url.split('/').pop() || ''];
-      sources.push({
-        title: titleMatch[1] || url,
-        url,
-        content: content.slice(0, 2000),
-      });
+    try {
+      const content = await fetchWithJina(url);
+      if (content && content.length > 100) {
+        const titleMatch = content.match(/^#\s+(.+)$/m);
+        sources.push({
+          title: titleMatch?.[1] || topic,
+          url,
+          content: content.slice(0, 2000),
+        });
+      }
+    } catch (e) {
+      console.log('[WebSearch] Failed to fetch:', url);
     }
   }
   
   return sources;
 }
 
-async function generateWithGroq(
-  systemPrompt: string,
-  userPrompt: string,
-  model: string = 'llama-3.3-70b-versatile'
-): Promise<string> {
-  if (!GROQ_API_KEY) {
-    throw new Error('GROQ_API_KEY not configured');
-  }
+async function generateWithGroq(systemPrompt: string, userPrompt: string): Promise<string> {
+  const apiKey = getGroqApiKey();
 
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model,
+      model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -126,15 +141,35 @@ async function generateWithGroq(
   }
 
   const data = await response.json();
-  return data.choices?.[0]?.message?.content || '';
+  const content = data.choices?.[0]?.message?.content || '';
+  
+  if (!content) {
+    throw new Error('No content generated from Groq');
+  }
+  
+  return content;
 }
 
-export async function autoGenerateArticles(topic: string): Promise<{ success: boolean; generated: number }> {
+export async function autoGenerateArticles(topic: string): Promise<{ success: boolean; generated: number; error?: string }> {
   console.log(`[AutoGenerate] Starting article generation for: ${topic}`);
 
-  if (!GROQ_API_KEY) {
-    console.log('[AutoGenerate] GROQ_API_KEY not configured');
-    return { success: false, generated: 0 };
+  let supabase: ReturnType<typeof getSupabaseAdmin>;
+  try {
+    supabase = getSupabaseAdmin();
+  } catch (e) {
+    console.error('[AutoGenerate] Failed to create Supabase client:', e);
+    return { success: false, generated: 0, error: 'Database configuration error' };
+  }
+
+  try {
+    const apiKey = getGroqApiKey();
+    if (!apiKey) {
+      console.log('[AutoGenerate] GROQ_API_KEY not configured');
+      return { success: false, generated: 0, error: 'GROQ_API_KEY not configured' };
+    }
+  } catch (e: any) {
+    console.error('[AutoGenerate]', e.message);
+    return { success: false, generated: 0, error: e.message };
   }
 
   const { data: existing } = await supabase
@@ -189,7 +224,7 @@ Based on the above sources, write a detailed encyclopedia article. Cite your sou
 
     if (!content || content.length < 200) {
       console.log('[AutoGenerate] Insufficient content generated');
-      return { success: false, generated: 0 };
+      return { success: false, generated: 0, error: 'Insufficient content generated' };
     }
 
     const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -198,7 +233,7 @@ Based on the above sources, write a detailed encyclopedia article. Cite your sou
     const firstParagraph = lines.find(l => l.trim() && !l.startsWith('#')) || '';
     const summary = firstParagraph.replace(/\[\d+\]/g, '').slice(0, 300).trim();
 
-    const { error } = await supabase.from('articles').insert({
+    const { error: insertError } = await supabase.from('articles').insert({
       title: topic,
       slug,
       content: content + '\n\n---\n\n## Sources\n\n' + citationsList,
@@ -208,9 +243,9 @@ Based on the above sources, write a detailed encyclopedia article. Cite your sou
       published_at: new Date().toISOString(),
     });
 
-    if (error) {
-      console.log('[AutoGenerate] Insert error:', error);
-      return { success: false, generated: 0 };
+    if (insertError) {
+      console.log('[AutoGenerate] Insert error:', insertError);
+      return { success: false, generated: 0, error: `Database error: ${insertError.message}` };
     }
 
     console.log(`[AutoGenerate] Success: Created article "${topic}" with slug "${slug}"`);
@@ -218,7 +253,7 @@ Based on the above sources, write a detailed encyclopedia article. Cite your sou
 
   } catch (err: any) {
     console.error('[AutoGenerate] Error:', err);
-    return { success: false, generated: 0 };
+    return { success: false, generated: 0, error: err.message || 'Unknown error' };
   }
 }
 
@@ -238,10 +273,13 @@ const TOPICS = [
 export async function autoGenerateBulk(limit = 10): Promise<{ success: boolean; generated: number }> {
   console.log('[Bulk Generate] Starting...');
 
-  if (!GROQ_API_KEY) {
+  try {
+    getGroqApiKey();
+  } catch {
     return { success: false, generated: 0 };
   }
 
+  const supabase = getSupabaseAdmin();
   const { data: existing } = await supabase.from('articles').select('title');
   const existingTitles = new Set(existing?.map(a => a.title.toLowerCase()) || []);
 

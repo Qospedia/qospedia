@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { Search as SearchIcon, FileText, Loader2, AlertCircle } from 'lucide-react';
+import { Search as SearchIcon, FileText, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -20,7 +20,6 @@ async function SearchResults({ query }: { query: string }) {
   const supabase = await createClient();
   const searchTerm = `%${query}%`;
 
-  // First check for existing articles
   const { data: articles } = await supabase
     .from('articles')
     .select('*, author:profiles(full_name), categories:categories(*)')
@@ -51,107 +50,109 @@ async function SearchResults({ query }: { query: string }) {
     );
   }
 
-  // No articles found - need to generate one
   console.log(`[Search] No articles for "${query}", generating...`);
 
-  // Import the generate function dynamically to avoid build issues
-  let generationError = '';
-  let generationSuccess = false;
-  let generatedArticle = null;
+  return (
+    <div className="text-center py-12">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-pulse">
+          <Sparkles className="h-12 w-12 text-accent" />
+        </div>
+        <p className="text-lg text-muted-foreground">
+          Creating new article for "{query}"...
+        </p>
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
+          <span className="text-sm text-muted-foreground">Generating with AI...</span>
+        </div>
+      </div>
+      <GeneratingArticle query={query} />
+    </div>
+  );
+}
+
+async function GeneratingArticle({ query }: { query: string }) {
+  const supabase = await createClient();
+  const searchTerm = `%${query}%`;
+
+  let generationResult: { success: boolean; generated: number; error?: string } = { success: false, generated: 0 };
 
   try {
     const { autoGenerateArticles } = await import('@/lib/auto-generate');
-    const result = await autoGenerateArticles(query);
-    
-    console.log('[Search] Generation result:', JSON.stringify(result));
-    generationSuccess = result.success;
+    generationResult = await autoGenerateArticles(query);
+    console.log('[Search] Generation result:', JSON.stringify(generationResult));
+  } catch (err: any) {
+    console.error('[Search] Generation error:', err);
+    generationResult = { success: false, generated: 0, error: err.message || 'Failed to generate' };
+  }
 
-    if (result.generated > 0) {
-      // Fetch the newly created article - try title first, then slug
-      const slug = query.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      
-      let { data: newArticles } = await supabase
+  if (generationResult.success && generationResult.generated > 0) {
+    const slug = query.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    
+    let { data: newArticle } = await supabase
+      .from('articles')
+      .select('*, author:profiles(full_name)')
+      .eq('status', 'published')
+      .eq('slug', slug)
+      .limit(1);
+
+    if (!newArticle || newArticle.length === 0) {
+      const { data: titleArticles } = await supabase
         .from('articles')
         .select('*, author:profiles(full_name)')
         .eq('status', 'published')
-        .eq('slug', slug)
+        .ilike('title', searchTerm)
         .limit(1);
-
-      if (!newArticles || newArticles.length === 0) {
-        // Try title search as fallback
-        const { data: titleArticles } = await supabase
-          .from('articles')
-          .select('*, author:profiles(full_name)')
-          .eq('status', 'published')
-          .ilike('title', searchTerm)
-          .limit(1);
-        newArticles = titleArticles;
-      }
-
-      // Last resort: get most recent article
-      if (!newArticles || newArticles.length === 0) {
-        const { data: recentArticles } = await supabase
-          .from('articles')
-          .select('*, author:profiles(full_name)')
-          .eq('status', 'published')
-          .order('created_at', { ascending: false })
-          .limit(1);
-        newArticles = recentArticles;
-      }
-
-      if (newArticles && newArticles.length > 0) {
-        generatedArticle = newArticles[0];
-        console.log('[Search] Found generated article:', generatedArticle.title, generatedArticle.slug);
-      } else {
-        console.log('[Search] Article not found after generation!');
-      }
+      newArticle = titleArticles;
     }
-  } catch (err: any) {
-    console.error('[Search] Generation error:', err);
-    generationError = err.message || 'Failed to generate article';
+
+    if (!newArticle || newArticle.length === 0) {
+      const { data: recentArticles } = await supabase
+        .from('articles')
+        .select('*, author:profiles(full_name)')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      newArticle = recentArticles;
+    }
+
+    if (newArticle && newArticle.length > 0) {
+      return (
+        <>
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-700 font-medium">✓ New article automatically created for "{query}"</p>
+          </div>
+          <Link href={`/article/${newArticle[0].slug}`}>
+            <Card className="transition-all hover:shadow-md border-green-500 max-w-xl mx-auto">
+              <CardContent className="p-6">
+                <h2 className="font-serif text-xl font-semibold text-foreground">{newArticle[0].title}</h2>
+                <p className="mt-3 text-muted-foreground line-clamp-3">{newArticle[0].summary || 'AI generated content...'}</p>
+                <span className="inline-block mt-3 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">AI Generated</span>
+              </CardContent>
+            </Card>
+          </Link>
+        </>
+      );
+    }
   }
 
-  // If we generated an article, show it
-  if (generatedArticle) {
+  if (generationResult.error) {
     return (
-      <>
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-700 font-medium">✓ New article automatically generated for "{query}"</p>
+      <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg max-w-xl mx-auto">
+        <div className="flex items-center gap-2 text-red-700">
+          <AlertCircle className="h-5 w-5" />
+          <span className="font-medium">Article generation failed</span>
         </div>
-        <Link href={`/article/${generatedArticle.slug}`}>
-          <Card className="transition-all hover:shadow-md border-green-500">
-            <CardContent className="p-6">
-              <h2 className="font-serif text-xl font-semibold text-foreground">{generatedArticle.title}</h2>
-              <p className="mt-3 text-muted-foreground line-clamp-3">{generatedArticle.summary || 'AI generated content...'}</p>
-              <span className="inline-block mt-3 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">AI Generated</span>
-            </CardContent>
-          </Card>
-        </Link>
-      </>
+        <p className="text-sm text-red-600 mt-2">{generationResult.error}</p>
+        <p className="text-xs text-red-500 mt-2">Please check your API keys configuration or try again later.</p>
+      </div>
     );
   }
 
-  // Show error or fallback message
   return (
-    <div className="text-center py-8">
-      <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-      <p className="text-muted-foreground mb-2">No articles found for "{query}"</p>
-      {generationError && (
-        <div className="flex items-center justify-center gap-2 text-destructive text-sm mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <span>AI generation failed: {generationError}</span>
-        </div>
-      )}
-      {generationSuccess && !generatedArticle && (
-        <p className="text-sm text-amber-600 mb-2">
-          Article was generated but couldn't be retrieved. Check database or try again.
-        </p>
-      )}
-      {!generationSuccess && !generationError && (
-        <p className="text-sm text-muted-foreground">
-          Make sure GROQ_API_KEY is configured in your environment.
-        </p>
-      )}
+    <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg max-w-xl mx-auto">
+      <p className="text-amber-700 font-medium">Article creation in progress...</p>
+      <p className="text-sm text-amber-600 mt-1">The article may take a moment to appear. Please refresh the page shortly.</p>
     </div>
   );
 }
