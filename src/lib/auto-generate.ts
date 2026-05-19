@@ -34,6 +34,27 @@ function getTavilyApiKey(): string | undefined {
   return process.env.TAVILY_API_KEY;
 }
 
+function getJinaApiKey(): string | undefined {
+  return process.env.JINA_API_KEY;
+}
+
+async function fetchWithJina(url: string): Promise<string> {
+  const apiKey = getJinaApiKey();
+  try {
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+    };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+    const res = await fetch(`https://r.jina.ai/${encodeURIComponent(url)}`, { headers });
+    const data = await res.json();
+    return data.content || '';
+  } catch {
+    return '';
+  }
+}
+
 async function fetchWikipediaFull(topic: string): Promise<WikipediaData | null> {
   try {
     const res = await fetch(
@@ -90,7 +111,7 @@ async function fetchTavilyResearch(topic: string): Promise<SourceData[]> {
         query: topic, 
         max_results: 10,
         include_answer: true,
-        include_raw_content: true
+        include_raw_content: false
       }),
     });
     const data = await res.json();
@@ -112,8 +133,10 @@ async function callGroq(
   
   const models = [
     'llama-3.3-70b-versatile',
+    'mixtral-8x7b-32768',
+    'llama-3.1-70b-versatile',
     'qwen/qwen3-32b',
-    'openai/gpt-oss-20b',
+    'llama-3.1-8b-instant',
   ];
   
   for (const model of models) {
@@ -138,7 +161,11 @@ async function callGroq(
         continue;
       }
 
-      if (!response.ok) continue;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`[Groq] ${model} error: ${response.status} - ${errorText.slice(0, 100)}`);
+        continue;
+      }
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || '';
@@ -157,16 +184,11 @@ async function callGroq(
 function cleanAiContent(content: string): string {
   let cleaned = content;
   
-  cleaned = cleaned.replace(/\n咀[\s\S]*?咀\n/g, '');
-  
+  cleaned = cleaned.replace(/咀[\s\S]*?咀\n/g, '');
   cleaned = cleaned.replace(/咀[\s\S]*?$/gim, '');
-  
   cleaned = cleaned.replace(/<think>[\s\S]*?/gi, '');
-  
   cleaned = cleaned.replace(/```\n咀/g, '```');
-  
   cleaned = cleaned.replace(/```$/gm, '');
-  
   cleaned = cleaned.replace(/\n\n\n+/g, '\n\n');
   
   const lines = cleaned.split('\n');
@@ -181,28 +203,10 @@ function cleanAiContent(content: string): string {
   });
   
   let result = filtered.join('\n');
-  
   result = result.replace(/^\s*咀\s*/gim, '');
   result = result.replace(/\s*咀\s*$/gim, '');
   
   return result.trim();
-}
-
-function generateQuickFactsTable(info: Record<string, string>): string {
-  if (Object.keys(info).length === 0) return '';
-  
-  let table = '\n\n## Quick Facts\n\n';
-  table += '| Property | Value |\n';
-  table += '|----------|-------|\n';
-  
-  const entries = Object.entries(info).slice(0, 12);
-  for (const [key, value] of entries) {
-    const cleanKey = key.replace(/_/g, ' ').replace(/\|/g, '');
-    const cleanValue = value.replace(/\[\[|\]\]/g, '').replace(/\{\{|\}\}/g, '').replace(/\|/g, '').slice(0, 100);
-    table += `| ${cleanKey} | ${cleanValue} |\n`;
-  }
-  
-  return table;
 }
 
 export async function autoGenerateArticles(topic: string): Promise<{ success: boolean; generated: number; error?: string }> {
@@ -223,6 +227,7 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
     }
 
     console.log('[AutoGenerate] Fetching data sources...');
+    
     const [wikiSummary, wikiContent] = await Promise.all([
       fetchWikipediaFull(topic),
       fetchWikipediaFullContent(topic),
@@ -275,6 +280,7 @@ FORMATTING REQUIREMENTS:
 - Do NOT wrap anything in code blocks (no triple backticks)
 - Do NOT include any thinking text
 - Start directly with "## Introduction"
+- Use Wikipedia-style internal links like [[Topic Name]] for related concepts
 
 OUTPUT ONLY THE ARTICLE - NO PREAMBLE OR EXPLANATION`;
 
@@ -299,19 +305,37 @@ Requirements:
 - Cite sources with [n] inline
 - No AI thinking text
 - Start with ## Introduction
-- No code blocks in output`;
+- No code blocks in output
+- Use [[Topic Name]] internal links for related concepts`;
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
-    let content = await callGroq([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ], 16000);
-
-    content = cleanAiContent(content);
+    let content;
+    try {
+      content = await callGroq([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ], 16000);
+      
+      content = cleanAiContent(content);
+    } catch (groqError) {
+      console.log('[AutoGenerate] GROQ failed, saving topic to pending...');
+      await supabase.from('pending_articles').insert({
+        title: topic,
+        slug: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        status: 'pending'
+      }).select().single();
+      
+      return { success: false, generated: 0, error: 'AI service temporarily unavailable. Topic saved for later.' };
+    }
 
     if (!content || content.length < 800) {
       console.log('[AutoGenerate] Content too short:', content?.length);
+      await supabase.from('pending_articles').insert({
+        title: topic,
+        slug: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        status: 'pending'
+      });
       return { success: false, generated: 0, error: 'Generated content too short or invalid' };
     }
 

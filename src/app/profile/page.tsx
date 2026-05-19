@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { toast } from '@/components/ui/use-toast';
 import { 
   User, Shield, Clock, Database, Cookie, Download, Trash2, 
   ChevronRight, Key, Smartphone, Globe, MapPin, Calendar,
-  Check, X, Eye, EyeOff, Trash
+  Check, X, Eye, EyeOff, Trash, Camera, Upload
 } from 'lucide-react';
 
 interface Session {
@@ -31,6 +31,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   const [fullName, setFullName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -41,6 +42,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('account');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -62,6 +64,80 @@ export default function ProfilePage() {
       });
     });
   }, [router]);
+
+  const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user || !profile) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Error', description: 'File size must be less than 5MB', variant: 'destructive' });
+      return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: 'Error', description: 'Only JPG, PNG, GIF, or WebP files are allowed', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const supabase = createClient();
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        const avatarUrl = urlData.publicUrl;
+
+        const { error: updateError } = await supabase.from('profiles').update({ 
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString()
+        }).eq('id', profile.id);
+
+        if (!updateError) {
+          setProfile((prev: any) => ({ ...prev, avatar_url: avatarUrl }));
+          toast({ title: 'Success', description: 'Profile picture updated!' });
+        } else {
+          throw new Error('Failed to update profile');
+        }
+      } else {
+        throw uploadError;
+      }
+    } catch (err: any) {
+      try {
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+
+        const supabase = createClient();
+        const { error: updateError } = await supabase.from('profiles').update({ 
+          avatar_url: base64,
+          updated_at: new Date().toISOString()
+        }).eq('id', profile.id);
+
+        if (!updateError) {
+          setProfile((prev: any) => ({ ...prev, avatar_url: base64 }));
+          toast({ title: 'Success', description: 'Profile picture updated!' });
+        } else {
+          throw new Error('Failed to update profile');
+        }
+      } catch (base64Err) {
+        toast({ title: 'Error', description: 'Failed to upload image', variant: 'destructive' });
+      }
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,12 +262,46 @@ export default function ProfilePage() {
                   <CardContent>
                     <form onSubmit={handleUpdateProfile} className="space-y-4">
                       <div className="flex items-center gap-4 p-4 bg-[#F7F7F7] dark:bg-[#1A1A1A] rounded-lg">
-                        <div className="w-16 h-16 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-xl font-semibold">
-                          {profile?.full_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase() || 'U'}
+                        <div className="relative group">
+                          <div className="w-20 h-20 rounded-full overflow-hidden bg-[#2563EB] flex items-center justify-center text-white text-2xl font-semibold">
+                            {profile?.avatar_url ? (
+                              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              profile?.full_name?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase() || 'U'
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingAvatar}
+                            className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+                          >
+                            {uploadingAvatar ? (
+                              <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Camera className="h-6 w-6 text-white" />
+                            )}
+                          </button>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            onChange={handleUploadAvatar}
+                            className="hidden"
+                          />
                         </div>
                         <div className="flex-1">
                           <p className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">{profile?.full_name || 'No name set'}</p>
                           <p className="text-[13px] text-[#636363] dark:text-[#858585]">{profile?.email}</p>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploadingAvatar}
+                            className="mt-2 text-[12px] text-[#2563EB] hover:underline flex items-center gap-1"
+                          >
+                            <Upload className="h-3 w-3" />
+                            {profile?.avatar_url ? 'Change photo' : 'Upload photo'}
+                          </button>
                         </div>
                       </div>
                       
@@ -395,28 +505,6 @@ export default function ProfilePage() {
 
             {activeTab === 'data' && (
               <div className="space-y-6">
-                <Card className="border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#FCFCFC] dark:bg-[#0A0A0A]">
-                  <CardHeader>
-                    <CardTitle className="text-[18px] font-semibold text-[#050505] dark:text-[#FCFCFC]">Your data</CardTitle>
-                    <CardDescription className="text-[#636363] dark:text-[#858585]">Manage your personal data stored with Qospedia</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-[#F7F7F7] dark:bg-[#1A1A1A] rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Database className="h-5 w-5 text-[#636363] dark:text-[#858585]" />
-                        <div>
-                          <p className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">Download account data</p>
-                          <p className="text-[13px] text-[#636363] dark:text-[#858585]">Download all your data in JSON format</p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm" className="border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 <Card className="border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10">
                   <CardHeader>
                     <CardTitle className="text-[18px] font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">

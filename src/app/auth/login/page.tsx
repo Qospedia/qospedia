@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -15,6 +15,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleLoginSuccess = useCallback(async () => {
+    router.push('/');
+    router.refresh();
+    window.location.href = '/';
+  }, [router]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -45,27 +51,22 @@ export default function LoginPage() {
       }
 
       if (authData.user) {
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authData.user.id)
           .single();
         
-        if (profileError && profileError.code === 'PGRST116') {
-          const { error: createError } = await supabase.from('profiles').insert({
+        if (!profileData) {
+          await supabase.from('profiles').insert({
             id: authData.user.id,
             email: authData.user.email,
             full_name: authData.user.user_metadata?.full_name || '',
             role: 'user'
           });
-          
-          if (createError) {
-            console.error('Profile creation error:', createError);
-          }
         }
         
-        router.push('/');
-        router.refresh();
+        await handleLoginSuccess();
       }
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -107,7 +108,7 @@ export default function LoginPage() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
-                className="mt-1 bg-[#F7F7F7] dark:bg-[#1A1A1A] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] text-[#050505] dark:text-[#FCFCFC]" 
+                className="mt-1 bg-[#F7F7F7] dark:bg-[#1A1A1A] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] text-[#050505] dark:text-[#FCFCFC]"
               />
             </div>
             <Button type="submit" className="w-full bg-[#050505] dark:bg-[#FCFCFC] text-[#FCFCFC] dark:text-[#050505] hover:bg-[#1a1a1a] dark:hover:bg-[#E5E7EB]" disabled={loading}>

@@ -3,6 +3,7 @@ import { Playfair_Display } from 'next/font/google';
 import { Footer } from '@/components/layout/footer';
 import { ToastProvider } from '@/components/ui/toast';
 import { Providers } from '@/components/providers';
+import { NavbarWrapper } from '@/components/layout/navbar-wrapper';
 import './globals.css';
 
 const playfair = Playfair_Display({
@@ -54,6 +55,7 @@ export default function RootLayout({
       </head>
       <body className={`${playfair.variable} min-h-screen flex flex-col bg-[#FCFCFC] dark:bg-[#050505] text-[#050505] dark:text-[#FCFCFC]`}>
         <Providers>
+          <NavbarWrapper />
           <main className="flex-1">{children}</main>
           <Footer />
           <ToastProvider />

@@ -136,11 +136,17 @@ export function Navbar({ showSearch = true }: { showSearch?: boolean }) {
             <div className="relative" data-dropdown>
               <Button 
                 variant="ghost" 
-                size="icon" 
+                size="icon"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)} 
                 className="text-[#636363] dark:text-[#858585] hover:bg-[rgba(5,5,5,0.05)] dark:hover:bg-[rgba(252,252,252,0.1)]"
               >
-                <User className="h-5 w-5" />
+                <div className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center overflow-hidden">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="h-5 w-5 text-white" />
+                  )}
+                </div>
               </Button>
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-56 rounded-lg border border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)] bg-[#FCFCFC] dark:bg-[#1A1A1A] shadow-[rgba(0,0,0,0.25)_0px_25px_50px_-12px] z-[60]">

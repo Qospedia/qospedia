@@ -28,9 +28,13 @@ export default function SuggestPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
+      if (!data.user) {
+        router.push('/auth/login?next=/suggest');
+      } else {
+        setUser(data.user);
+      }
     });
-  }, []);
+  }, [router]);
 
   const addSource = () => {
     setSources([...sources, '']);
