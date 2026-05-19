@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,26 +9,19 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLoginSuccess = useCallback(async () => {
-    router.push('/');
-    router.refresh();
-    window.location.href = '/';
-  }, [router]);
-
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        router.push('/');
+        window.location.href = '/';
       }
     });
-  }, [router]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +58,8 @@ export default function LoginPage() {
           });
         }
         
-        await handleLoginSuccess();
+        const nextUrl = new URLSearchParams(window.location.search).get('next');
+        window.location.href = nextUrl || '/';
       }
     } catch (err: any) {
       setError(err.message || 'Login failed');
