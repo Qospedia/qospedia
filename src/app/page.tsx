@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { SearchBar } from '@/components/ui/search-bar';
 import { createClient } from '@/lib/supabase/client';
-import { User, LogOut, Plus, LayoutDashboard, Settings, Lightbulb } from 'lucide-react';
+import { User, LogOut, Plus, LayoutDashboard, Settings, Lightbulb, Sun, Moon } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 export default function HomePage() {
@@ -16,6 +16,7 @@ export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
   const loadUserData = useCallback(async (currentUser: any) => {
     if (!currentUser) return;
@@ -50,8 +51,13 @@ export default function HomePage() {
     });
 
     const stored = localStorage.getItem('theme');
-    if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    const isDark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
       document.documentElement.classList.add('dark');
+      setDarkMode(true);
+    } else {
+      document.documentElement.classList.remove('dark');
+      setDarkMode(false);
     }
 
     return () => {
@@ -74,6 +80,18 @@ export default function HomePage() {
     setUser(null);
     setProfile(null);
     window.location.href = '/';
+  };
+
+  const toggleDarkMode = () => {
+    const newDark = !darkMode;
+    setDarkMode(newDark);
+    if (newDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
   };
 
   if (!mounted) {
@@ -117,6 +135,14 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col">
         <header className="absolute top-0 left-0 right-0 p-4">
           <div className="flex justify-end items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleDarkMode}
+              className="p-2 text-[#636363] dark:text-[#858585] hover:bg-[rgba(5,5,5,0.05)] dark:hover:bg-[rgba(252,252,252,0.1)]"
+            >
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             {user ? (
               <div className="relative flex items-center gap-2">
                 <Button

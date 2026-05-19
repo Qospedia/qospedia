@@ -151,20 +151,28 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
         </div>
       </div>
       
-{displayError && (
-          <div className="mt-6 p-4 bg-[#FEF2F2] border border-[#EF4444] rounded-lg max-w-xl mx-auto">
-            <div className="flex items-center gap-2 text-[#EF4444] mb-2">
-              <AlertCircle className="h-4 w-4" />
-              <span className="font-medium text-[14px]">Generation Issue</span>
-            </div>
-            <p className="text-[14px] text-[#EF4444]">{displayError}</p>
-            {displayError?.includes('GROQ') && (
-              <p className="text-[12px] text-[#EF4444] opacity-70 mt-2">
-                The AI service is temporarily unavailable. Please try again in a few minutes.
-              </p>
-            )}
+      {displayError && (
+        <div className="mt-6 p-4 bg-[#FEF2F2] border border-[#EF4444] rounded-lg max-w-xl mx-auto">
+          <div className="flex items-center gap-2 text-[#EF4444] mb-2">
+            <AlertCircle className="h-4 w-4" />
+            <span className="font-medium text-[14px]">Generation Issue</span>
           </div>
-        )}
+          <p className="text-[14px] text-[#EF4444]">{displayError}</p>
+          <div className="mt-4 flex gap-3 justify-center">
+            <form action="/api/save-topic" method="POST">
+              <input type="hidden" name="topic" value={query} />
+              <button type="submit" className="text-[14px] px-4 py-2 bg-[#2563EB] text-white rounded-md hover:bg-[#1d4ed8]">
+                Save for Later
+              </button>
+            </form>
+            <Link href="/suggest">
+              <button className="text-[14px] px-4 py-2 border border-[#E5E7EB] rounded-md hover:bg-[#F7F7F7]">
+                Suggest Article
+              </button>
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

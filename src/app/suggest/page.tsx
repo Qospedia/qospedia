@@ -207,6 +207,42 @@ export default function SuggestPage() {
                 />
               </div>
 
+              <div>
+                <Label className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">
+                  Supporting sources (optional)
+                </Label>
+                <div className="space-y-2 mt-1.5">
+                  {sources.map((source, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={source}
+                        onChange={(e) => updateSource(index, e.target.value)}
+                        placeholder="https://example.com/source"
+                        className="flex-1 bg-[#F7F7F7] dark:bg-[#1A1A1A] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] text-[#050505] dark:text-[#FCFCFC] placeholder:text-[#858585] dark:placeholder:text-[#636363]"
+                      />
+                      {sources.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeSource(index)}
+                          className="text-[#636363] dark:text-[#858585] hover:text-[#EF4444]"
+                        >
+                          ×
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={addSource}
+                  className="mt-2 text-[14px] text-[#2563EB] hover:underline"
+                >
+                  + Add another source
+                </button>
+              </div>
+
               {suggestionType === 'new_article' && (
                 <div className="bg-[#F7F7F7] dark:bg-[#1A1A1A] p-4 rounded-lg">
                   <h3 className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC] mb-3">What makes a great suggestion?</h3>
@@ -228,61 +264,23 @@ export default function SuggestPage() {
               )}
 
               {suggestionType === 'edit' && (
-                <>
-                  <div>
-                    <Label className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC]">
-                      Supporting sources (optional)
-                    </Label>
-                    <div className="space-y-2 mt-1.5">
-                      {sources.map((source, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            value={source}
-                            onChange={(e) => updateSource(index, e.target.value)}
-                            placeholder="https://example.com/source"
-                            className="flex-1 bg-[#F7F7F7] dark:bg-[#1A1A1A] border-[rgba(5,5,5,0.06)] dark:border-[rgba(252,252,252,0.1)] text-[#050505] dark:text-[#FCFCFC] placeholder:text-[#858585] dark:placeholder:text-[#636363]"
-                          />
-                          {sources.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeSource(index)}
-                              className="text-[#636363] dark:text-[#858585] hover:text-[#EF4444]"
-                            >
-                              ×
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={addSource}
-                      className="mt-2 text-[14px] text-[#2563EB] hover:underline"
-                    >
-                      + Add another source
-                    </button>
-                  </div>
-
-                  <div className="bg-[#F7F7F7] dark:bg-[#1A1A1A] p-4 rounded-lg">
-                    <h3 className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC] mb-3">What makes a great edit?</h3>
-                    <ul className="space-y-2 text-[14px] text-[#636363] dark:text-[#858585]">
-                      <li className="flex items-start gap-2">
-                        <ArrowRight className="w-4 h-4 mt-0.5 text-[#2563EB]" />
-                        <span>Select the wrong text in the article first</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <ArrowRight className="w-4 h-4 mt-0.5 text-[#2563EB]" />
-                        <span>Add a source link so we can verify</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <ArrowRight className="w-4 h-4 mt-0.5 text-[#2563EB]" />
-                        <span>One fix per submission is easiest to review</span>
-                      </li>
-                    </ul>
-                  </div>
-                </>
+                <div className="bg-[#F7F7F7] dark:bg-[#1A1A1A] p-4 rounded-lg">
+                  <h3 className="text-[14px] font-medium text-[#050505] dark:text-[#FCFCFC] mb-3">What makes a great edit?</h3>
+                  <ul className="space-y-2 text-[14px] text-[#636363] dark:text-[#858585]">
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="w-4 h-4 mt-0.5 text-[#2563EB]" />
+                      <span>Select the wrong text in the article first</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="w-4 h-4 mt-0.5 text-[#2563EB]" />
+                      <span>Add a source link so we can verify</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <ArrowRight className="w-4 h-4 mt-0.5 text-[#2563EB]" />
+                      <span>One fix per submission is easiest to review</span>
+                    </li>
+                  </ul>
+                </div>
               )}
 
               <div className="flex gap-3 pt-4">
