@@ -211,7 +211,8 @@ function extractHeadings(content: string) {
 }
 
 export async function generateMetadata({ params }: ArticlePageProps) {
-  const { slug } = await params;
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
   const supabase = await createClient();
 
   const { data: article } = await supabase
@@ -232,7 +233,8 @@ export async function generateMetadata({ params }: ArticlePageProps) {
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
-  const { slug } = await params;
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
   const supabase = await createClient();
 
   const { data: article, error } = await supabase
@@ -243,8 +245,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     .single();
 
   if (error || !article) {
+    console.log('Article not found:', slug, 'error:', error);
     notFound();
   }
+
+  console.log('Article found:', article.title, 'slug:', article.slug);
 
   await supabase
     .from('articles')
