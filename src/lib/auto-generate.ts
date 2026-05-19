@@ -8,28 +8,14 @@ interface SourceData {
   content: string;
 }
 
-interface ModelConfig {
-  id: string;
-  tier: 'premium' | 'balanced' | 'fast';
-  maxTokens: number;
-  quality: number;
-  speed: number;
+interface WikipediaData {
+  extract: string;
+  extract_html: string;
+  description: string;
+  thumbnail?: { source: string };
+  originalimage?: { source: string };
+  content_urls?: { desktop?: { page?: string } };
 }
-
-const GROQ_MODELS: ModelConfig[] = [
-  { id: 'llama-3.3-70b-versatile', tier: 'premium', maxTokens: 32768, quality: 10, speed: 1 },
-  { id: 'qwen/qwen3-32b', tier: 'balanced', maxTokens: 40960, quality: 9, speed: 3 },
-  { id: 'openai/gpt-oss-20b', tier: 'balanced', maxTokens: 65536, quality: 8, speed: 3 },
-  { id: 'meta-llama/llama-4-scout-17b-16e-instruct', tier: 'balanced', maxTokens: 8192, quality: 8, speed: 4 },
-  { id: 'llama-3.1-8b-instant', tier: 'fast', maxTokens: 131072, quality: 6, speed: 5 },
-];
-
-const MODEL_PRIORITY: Record<string, string[]> = {
-  premium: ['llama-3.3-70b-versatile', 'qwen/qwen3-32b', 'openai/gpt-oss-20b'],
-  balanced: ['qwen/qwen3-32b', 'openai/gpt-oss-20b', 'meta-llama/llama-4-scout-17b-16e-instruct', 'llama-3.1-8b-instant'],
-  fast: ['llama-3.1-8b-instant', 'meta-llama/llama-4-scout-17b-16e-instruct', 'qwen/qwen3-32b'],
-  all: ['llama-3.3-70b-versatile', 'qwen/qwen3-32b', 'openai/gpt-oss-20b', 'meta-llama/llama-4-scout-17b-16e-instruct', 'llama-3.1-8b-instant'],
-};
 
 function getSupabaseAdmin() {
   return createClient(
@@ -48,14 +34,44 @@ function getTavilyApiKey(): string | undefined {
   return process.env.TAVILY_API_KEY;
 }
 
-async function fetchWikipediaSummary(topic: string): Promise<string> {
+async function fetchWikipediaFull(topic: string): Promise<WikipediaData | null> {
   try {
     const res = await fetch(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topic)}`,
       { headers: { 'Accept': 'application/json' }, next: { revalidate: 3600 } }
     );
+    
+    if (!res.ok) return null;
+    
     const data = await res.json();
-    return data.extract || '';
+    return {
+      extract: data.extract || '',
+      extract_html: data.extract_html || '',
+      description: data.description || '',
+      thumbnail: data.thumbnail,
+      originalimage: data.originalimage,
+      content_urls: data.content_urls,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWikipediaFullContent(topic: string): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(topic)}&prop=extracts&exintro=false&explaintext=true&format=json&origin=*`,
+      { next: { revalidate: 3600 } }
+    );
+    
+    if (!res.ok) return '';
+    
+    const data = await res.json();
+    const pages = data.query?.pages;
+    if (!pages) return '';
+    
+    const page = Object.values(pages)[0] as any;
+    return page?.extract || '';
   } catch {
     return '';
   }
@@ -69,30 +85,39 @@ async function fetchTavilyResearch(topic: string): Promise<SourceData[]> {
     const res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ api_key: apiKey, query: topic, max_results: 5, include_answer: true }),
+      body: JSON.stringify({ 
+        api_key: apiKey, 
+        query: topic, 
+        max_results: 10,
+        include_answer: true,
+        include_raw_content: true
+      }),
     });
     const data = await res.json();
-    return (data.results || []).map((r: any) => ({ title: r.title, url: r.url, content: r.content }));
+    return (data.results || []).map((r: any) => ({ 
+      title: r.title, 
+      url: r.url, 
+      content: r.content 
+    }));
   } catch {
     return [];
   }
 }
 
-async function callGroqWithFallback(
+async function callGroq(
   messages: { role: string; content: string }[],
-  maxTokens: number = 3000,
-  tier: keyof typeof MODEL_PRIORITY = 'balanced'
+  maxTokens: number = 8000
 ): Promise<string> {
   const apiKey = getGroqApiKey();
-  const models = MODEL_PRIORITY[tier];
-
-  for (let attempt = 0; attempt < models.length; attempt++) {
-    const model = models[attempt];
-    
+  
+  const models = [
+    'llama-3.3-70b-versatile',
+    'qwen/qwen3-32b',
+    'openai/gpt-oss-20b',
+  ];
+  
+  for (const model of models) {
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 60000);
-
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -102,123 +127,82 @@ async function callGroqWithFallback(
         body: JSON.stringify({
           model,
           messages,
-          temperature: 0.7,
+          temperature: 0.5,
           max_tokens: maxTokens,
         }),
-        signal: controller.signal,
+        signal: AbortSignal.timeout(120000),
       });
 
-      clearTimeout(timeout);
-
       if (response.status === 429) {
-        const retryAfter = response.headers.get('retry-after') || '30';
-        console.log(`[Groq] Rate limited on ${model}, waiting ${retryAfter}s...`);
-        await new Promise(r => setTimeout(r, parseInt(retryAfter) * 1000));
+        await new Promise(r => setTimeout(r, 5000));
         continue;
       }
 
-      if (!response.ok) {
-        const error = await response.text();
-        console.log(`[Groq] ${model} error ${response.status}: ${error.substring(0, 100)}`);
-        continue;
-      }
+      if (!response.ok) continue;
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || '';
       
-      if (content && content.length > 100) {
-        console.log(`[Groq] Success with ${model} (${tier} tier)`);
+      if (content && content.length > 500) {
         return content;
       }
     } catch (e: any) {
-      if (e.name === 'AbortError') {
-        console.log(`[Groq] ${model} timed out, trying next...`);
-      } else {
-        console.log(`[Groq] ${model} error: ${e.message.substring(0, 80)}`);
-      }
+      console.log(`[Groq] ${model} error: ${e.message}`);
     }
   }
 
-  for (const model of MODEL_PRIORITY.all) {
-    if (models.includes(model)) continue;
-    try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: 0.7,
-          max_tokens: Math.min(maxTokens, 2000),
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || '';
-        if (content) {
-          console.log(`[Groq] Emergency fallback success with ${model}`);
-          return content;
-        }
-      }
-    } catch {}
-  }
-
-  throw new Error('All GROQ models unavailable');
+  throw new Error('All GROQ models failed');
 }
 
-async function generateWithMultipleModels(
-  systemPrompt: string,
-  userPrompt: string
-): Promise<{ content: string; model: string }> {
-  const models = ['qwen/qwen3-32b', 'openai/gpt-oss-20b', 'meta-llama/llama-4-scout-17b-16e-instruct'];
-  const promises = models.map(async (model) => {
-    const apiKey = getGroqApiKey();
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 2500,
-      }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return { model, content: data.choices?.[0]?.message?.content || '', score: (data.choices?.[0]?.message?.content || '').length };
+function cleanAiContent(content: string): string {
+  let cleaned = content;
+  
+  cleaned = cleaned.replace(/\n咀[\s\S]*?咀\n/g, '');
+  
+  cleaned = cleaned.replace(/咀[\s\S]*?$/gim, '');
+  
+  cleaned = cleaned.replace(/<think>[\s\S]*?/gi, '');
+  
+  cleaned = cleaned.replace(/```\n咀/g, '```');
+  
+  cleaned = cleaned.replace(/```$/gm, '');
+  
+  cleaned = cleaned.replace(/\n\n\n+/g, '\n\n');
+  
+  const lines = cleaned.split('\n');
+  const filtered = lines.filter(line => {
+    const trimmed = line.trim();
+    if (trimmed === '```' || trimmed === '```markdown' || trimmed === '```md') return false;
+    if (trimmed.startsWith('<think>')) return false;
+    if (trimmed.includes('Let me write') || trimmed.includes('I need to') || trimmed.includes('In this article')) {
+      if (line.length < 100) return false;
     }
-    return { model, content: '', score: 0 };
+    return true;
   });
+  
+  let result = filtered.join('\n');
+  
+  result = result.replace(/^\s*咀\s*/gim, '');
+  result = result.replace(/\s*咀\s*$/gim, '');
+  
+  return result.trim();
+}
 
-  const results = await Promise.allSettled(promises);
-  const validResults = results
-    .filter((r): r is PromiseFulfilledResult<{model: string; content: string; score: number}> => 
-      r.status === 'fulfilled' && r.value.content.length > 200
-    )
-    .map(r => r.value)
-    .sort((a, b) => b.score - a.score);
-
-  if (validResults.length > 0) {
-    console.log(`[MultiModel] Best result from: ${validResults[0].model} (${validResults[0].content.length} chars)`);
-    return { content: validResults[0].content, model: validResults[0].model };
+function generateQuickFactsTable(info: Record<string, string>): string {
+  if (Object.keys(info).length === 0) return '';
+  
+  let table = '\n\n## Quick Facts\n\n';
+  table += '| Property | Value |\n';
+  table += '|----------|-------|\n';
+  
+  const entries = Object.entries(info).slice(0, 12);
+  for (const [key, value] of entries) {
+    const cleanKey = key.replace(/_/g, ' ').replace(/\|/g, '');
+    const cleanValue = value.replace(/\[\[|\]\]/g, '').replace(/\{\{|\}\}/g, '').replace(/\|/g, '').slice(0, 100);
+    table += `| ${cleanKey} | ${cleanValue} |\n`;
   }
-
-  return callGroqWithFallback(
-    [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-    3000,
-    'premium'
-  ).then(content => ({ content, model: 'llama-3.3-70b-versatile' }));
+  
+  return table;
 }
 
 export async function autoGenerateArticles(topic: string): Promise<{ success: boolean; generated: number; error?: string }> {
@@ -234,59 +218,173 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
       .limit(1);
 
     if (existing && existing.length > 0) {
+      console.log(`[AutoGenerate] Article already exists: ${topic}`);
       return { success: true, generated: 0 };
     }
 
     console.log('[AutoGenerate] Fetching data sources...');
-    const [wikiContent, tavilySources] = await Promise.all([
-      fetchWikipediaSummary(topic),
-      fetchTavilyResearch(topic),
+    const [wikiSummary, wikiContent] = await Promise.all([
+      fetchWikipediaFull(topic),
+      fetchWikipediaFullContent(topic),
     ]);
 
-    const citationsList = tavilySources.map((s, i) => `[${i + 1}] ${s.title} - ${s.url}`).join('\n');
+    const tavilySources = await fetchTavilyResearch(topic);
 
-    const systemPrompt = `You are an expert encyclopedia article writer. Write comprehensive, well-structured articles in Markdown format with proper citations [n] where you reference sources.
+    const citations = tavilySources.map((s, i) => ({
+      source_title: s.title,
+      source_url: s.url,
+      source_author: '',
+      source_date: ''
+    }));
 
-Structure: Introduction, History/Background, Main Content, Impact/Significance, Conclusion, References.`;
+    const citationsText = citations.length > 0 
+      ? '\n\n## References\n\n' + citations.map((c, i) => `${i + 1}. [${c.source_title}](${c.source_url})`).join('\n')
+      : '';
 
-    const userPrompt = `Write a detailed encyclopedia article about "${topic}".
+    const systemPrompt = `You are a professional encyclopedia writer for Qospedia. Your articles are comprehensive, well-structured, and rival Wikipedia in quality.
 
-WIKIPEDIA: ${wikiContent || 'No Wikipedia summary'}
+STRICT RULES - FOLLOW THESE OR YOUR OUTPUT WILL BE REJECTED:
+1. NEVER include any AI thinking, reasoning, or self-referential text
+2. NEVER start with "<think>" or any analysis narration
+3. NEVER use first person or say things like "I will write" or "Let me explain"
+4. Start immediately with "## Introduction" or the first heading
+5. Write AT LEAST 1500 words - quality and length matter
+6. Use proper Markdown: ## for major sections, ### for subsections
+7. Use tables (| col | col |) for factual information
+8. Use bullet points for lists
+9. Cite sources with [1], [2], etc. inline
 
-SOURCES: ${tavilySources.map((s, i) => `[${i + 1}] ${s.title}: ${s.content?.slice(0, 300)}...`).join('\n\n') || 'No additional sources'}`;
+ARTICLE STRUCTURE - INCLUDE ALL SECTIONS:
+## Introduction (2-3 paragraphs defining the topic)
+## Historical Background (origin, development over time)
+## Key Concepts (main ideas explained)
+## Applications and Uses (real-world examples)
+## Impact and Significance (cultural, scientific, social impact)
+## Notable Examples or Case Studies (specific instances)
+## Current Research and Developments (recent advancements)
+## Challenges and Controversies (debates, problems, criticism)
+## Future Outlook (predictions, potential developments)
+## References (source list)
 
-    console.log('[AutoGenerate] Generating with multi-model system...');
-    const { content, model: usedModel } = await generateWithMultipleModels(systemPrompt, userPrompt);
+FORMATTING REQUIREMENTS:
+- Each major section should be 150-300 words
+- Include tables for factual comparisons
+- Use ### for sub-sections within main sections
+- Add bullet points for lists of items
+- Cite sources inline with [1], [2], etc.
+- Do NOT wrap anything in code blocks (no triple backticks)
+- Do NOT include any thinking text
+- Start directly with "## Introduction"
 
-    if (!content || content.length < 200) {
-      return { success: false, generated: 0, error: 'Insufficient content generated' };
+OUTPUT ONLY THE ARTICLE - NO PREAMBLE OR EXPLANATION`;
+
+    const wikipediaContent = wikiContent ? wikiContent.slice(0, 6000) : '';
+    const sourcesText = tavilySources.length > 0 
+      ? '\n\nRESEARCH SOURCES:\n' + tavilySources.map((s, i) => `[${i + 1}] ${s.title}: ${s.content?.slice(0, 300) || 'No description'}...`).join('\n\n')
+      : '';
+
+    const userPrompt = `Write a comprehensive encyclopedia article about "${topic}".
+
+WIKIPEDIA SUMMARY:
+${wikiSummary?.extract || 'Not available'}
+
+WIKIPEDIA FULL CONTENT:
+${wikipediaContent || 'Not available'}${sourcesText}
+
+Requirements:
+- Minimum 1500 words
+- Professional encyclopedia style
+- Proper section headings (## and ###)
+- Include data tables where relevant
+- Cite sources with [n] inline
+- No AI thinking text
+- Start with ## Introduction
+- No code blocks in output`;
+
+    console.log('[AutoGenerate] Generating with GROQ...');
+    
+    let content = await callGroq([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ], 16000);
+
+    content = cleanAiContent(content);
+
+    if (!content || content.length < 800) {
+      console.log('[AutoGenerate] Content too short:', content?.length);
+      return { success: false, generated: 0, error: 'Generated content too short or invalid' };
     }
 
     const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    
     const lines = content.split('\n');
-    const firstParagraph = lines.find(l => l.trim() && !l.startsWith('#')) || '';
-    const summary = firstParagraph.replace(/\[\d+\]/g, '').slice(0, 300).trim();
+    const firstParagraph = lines.find(l => 
+      l.trim() && 
+      !l.startsWith('#') && 
+      !l.startsWith('|') && 
+      l.length > 80
+    ) || '';
+    const summary = firstParagraph.replace(/\[\d+\]/g, '').replace(/\[source\]/gi, '').slice(0, 350).trim();
 
-    const { error } = await supabase.from('articles').insert({
-      title: topic,
-      slug,
-      content: content + '\n\n---\n\n## References\n\n' + citationsList,
-      summary,
-      status: 'published',
-      author_id: '00000000-0000-0000-0000-000000000001',
-      published_at: new Date().toISOString(),
-    });
+    console.log('[AutoGenerate] Inserting article...');
+    
+    const { data: articleData, error: insertError } = await supabase
+      .from('articles')
+      .insert({
+        title: topic,
+        slug,
+        content: content + citationsText,
+        summary,
+        status: 'published',
+        author_id: '00000000-0000-0000-0000-000000000001',
+        published_at: new Date().toISOString(),
+        wikipedia_title: topic,
+        view_count: 0,
+      })
+      .select('id')
+      .single();
 
-    if (error) {
-      console.log('[AutoGenerate] Insert error:', error);
-      return { success: false, generated: 0, error: error.message };
+    if (insertError) {
+      console.log('[AutoGenerate] Insert error:', insertError);
+      return { success: false, generated: 0, error: insertError.message };
     }
 
-    console.log(`[AutoGenerate] Success: "${topic}" (${usedModel})`);
+    if (citations.length > 0 && articleData) {
+      const citationsToInsert = citations.map((c, i) => ({
+        article_id: articleData.id,
+        source_title: c.source_title,
+        source_url: c.source_url,
+        source_author: c.source_author,
+        source_date: c.source_date,
+        order_index: i + 1
+      }));
+
+      await supabase.from('citations').insert(citationsToInsert);
+    }
+
+    console.log(`[AutoGenerate] Success: "${topic}" (${content.length} chars)`);
     return { success: true, generated: 1 };
 
   } catch (err: any) {
     console.error('[AutoGenerate] Error:', err);
+    return { success: false, generated: 0, error: err.message };
+  }
+}
+
+export async function regenerateArticle(topic: string): Promise<{ success: boolean; generated: number; error?: string }> {
+  console.log(`[Regenerate] Starting: ${topic}`);
+
+  try {
+    const supabase = getSupabaseAdmin();
+
+    await supabase
+      .from('articles')
+      .delete()
+      .ilike('title', `%${topic}%`);
+
+    return autoGenerateArticles(topic);
+  } catch (err: any) {
+    console.error('[Regenerate] Error:', err);
     return { success: false, generated: 0, error: err.message };
   }
 }
@@ -312,7 +410,7 @@ export async function autoGenerateBulk(limit = 10): Promise<{ success: boolean; 
     for (const topic of topicsToGenerate) {
       const result = await autoGenerateArticles(topic);
       if (result.generated > 0) generated++;
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 3000));
     }
 
     return { success: true, generated };
@@ -321,17 +419,6 @@ export async function autoGenerateBulk(limit = 10): Promise<{ success: boolean; 
   }
 }
 
-export async function enhanceWithGroq(content: string, task: 'improve' | 'summarize' | 'expand'): Promise<string> {
-  const prompts = {
-    improve: { instruction: 'Improve the writing quality', maxTokens: 3000 },
-    summarize: { instruction: 'Summarize in 3 paragraphs', maxTokens: 500 },
-    expand: { instruction: 'Expand with more details and examples', maxTokens: 4000 },
-  };
-
-  const { instruction, maxTokens } = prompts[task];
-  
-  return callGroqWithFallback([
-    { role: 'system', content: 'You are an expert editor.' },
-    { role: 'user', content: `${instruction}:\n\n${content}` }
-  ], maxTokens, 'balanced');
+export async function cleanArticleContent(content: string): Promise<string> {
+  return cleanAiContent(content);
 }
