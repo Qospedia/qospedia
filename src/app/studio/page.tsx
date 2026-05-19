@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard, FileText, Users, Settings, Shield, BarChart3,
   Eye, Edit3, Plus, Trash2, AlertTriangle, TrendingUp, TrendingDown,
