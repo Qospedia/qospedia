@@ -37,6 +37,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -49,6 +52,7 @@ export default function RootLayout({
                   }
                 } catch (e) {}
               })();
+              (function(){var s=document.createElement('script');s.async=1;s.src='https://widget.intercom.io/widget/'+(window.INTERCOM_APP_ID||'');document.head.appendChild(s);})();
             `,
           }}
         />

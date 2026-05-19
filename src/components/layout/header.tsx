@@ -169,8 +169,8 @@ export function Navbar({ showSearch = true }: { showSearch?: boolean }) {
                       </Link>
                     )}
                     {profile?.role === 'admin' && (
-                      <Link href="/admin" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]" onClick={() => setIsDropdownOpen(false)}>
-                        <Settings className="h-4 w-4" />Admin
+                      <Link href="/studio" className="flex items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#050505] dark:text-[#FCFCFC] hover:bg-[#F7F7F7] dark:hover:bg-[rgba(252,252,252,0.1)]" onClick={() => setIsDropdownOpen(false)}>
+                        <Settings className="h-4 w-4" />Admin Studio
                       </Link>
                     )}
                     <button onClick={async () => { const supabase = createClient(); await supabase.auth.signOut(); window.location.href = '/'; }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-[14px] text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)]">
