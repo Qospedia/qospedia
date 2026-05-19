@@ -16,13 +16,6 @@ export function middleware(request: NextRequest) {
     response.headers.delete(header);
   });
 
-  if (request.nextUrl.pathname.startsWith('/studio')) {
-    const supabaseAuthCookie = request.cookies.get('sb-access-token');
-    if (!supabaseAuthCookie) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
-    }
-  }
-
   return response;
 }
 
