@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Clock, Eye, Edit, ThumbsUp, ExternalLink, BookOpen, Tag, Volume2, Copy, Share2, Wifi, WifiOff } from 'lucide-react';
+import { Clock, Eye, Edit, ThumbsUp, ExternalLink, BookOpen, Volume2, Copy, Wifi } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -237,15 +237,19 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   const slug = resolvedParams.slug;
   const supabase = await createClient();
 
+  console.log('Fetching article with slug:', slug);
+
   const { data: article, error } = await supabase
     .from('articles')
-    .select('id, title, slug, summary, content, view_count, published_at, created_at, author_id, category_id, tags, wikipedia_title')
+    .select('id, title, slug, summary, content, view_count, published_at, created_at, author_id, tags, wikipedia_title')
     .eq('slug', slug)
     .eq('status', 'published')
     .single();
 
+  console.log('Article query result:', article ? 'found' : 'not found', 'error:', error);
+
   if (error || !article) {
-    console.log('Article not found:', slug, 'error:', error);
+    console.log('Article not found:', slug, 'error:', JSON.stringify(error));
     notFound();
   }
 
@@ -268,10 +272,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     .eq('status', 'published')
     .neq('id', article.id)
     .limit(3);
-
-  const { data: category } = article.category_id 
-    ? await supabase.from('categories').select('name, slug').eq('id', article.category_id).single()
-    : { data: null };
 
   const tags = article.tags || [];
   const headings = extractHeadings(article.content);
@@ -333,13 +333,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <main className="flex-1 min-w-0">
             <article className="prose prose-slate dark:prose-invert max-w-none">
               <header className="mb-8 pb-6 border-b border-[#E5E7EB] dark:border-[rgba(252,252,252,0.1)]">
-                {category && (
-                  <Link href={`/categories/${category.slug}`} className="inline-flex items-center gap-1.5 text-[13px] text-[#2563EB] hover:underline mb-3">
-                    <Tag className="h-3.5 w-3.5" />
-                    {category.name}
-                  </Link>
-                )}
-                
                 <h1 className="text-[32px] font-semibold text-[#050505] dark:text-[#FCFCFC] mb-4 tracking-tight leading-tight">
                   {article.title}
                 </h1>
