@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Playfair_Display } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import { Footer } from '@/components/layout/footer';
 import { ToastProvider } from '@/components/ui/toast';
 import { Providers } from '@/components/providers';
@@ -64,6 +65,7 @@ export default function RootLayout({
           <Footer />
           <ToastProvider />
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
