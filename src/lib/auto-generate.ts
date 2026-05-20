@@ -328,51 +328,28 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
       ? '\n\n## References\n\n' + citations.map((c, i) => `${i + 1}. [${c.title}](${c.url})`).join('\n')
       : '';
 
-    const systemPrompt = 'You are a Wikipedia-level encyclopedia writer. Create MASSIVE, comprehensive articles with PROPER MARKDOWN TABLES (not ASCII art), real images, citations, and expert-level content. Use ## for sections, ### for subsections. Include proper Markdown tables with | headers |. Add images with ![alt](url). Cite sources [1][2]. End with References section. NO code blocks, NO ASCII tables.';
+    const systemPrompt = 'Write encyclopedia article. ## headings, | tables |, bullets, IMG ![alt](url), cite [1], refs at end.';
 
-    // Build comprehensive prompt with all sources
-    let userPrompt = 'Write a MASSIVE comprehensive encyclopedia article about ' + topic + ' (3000+ words).\n\n';
+    // Build concise prompt with all sources
+    let userPrompt = 'Article: ' + topic + '\n\n';
     
-    // Wikipedia section
-    userPrompt += '=== WIKIPEDIA DATA ===\n';
+    // Wikipedia (key info only)
     if (wikiSummary?.extract) {
-      userPrompt += 'Summary: ' + wikiSummary.extract.slice(0, 1500) + '\n\n';
-    }
-    if (wikiContent) {
-      userPrompt += 'Full Content: ' + wikiContent.slice(0, 3000) + '\n\n';
+      userPrompt += 'WIKI: ' + wikiSummary.extract.slice(0, 500) + '\n';
     }
     
-    // Images
+    // Image
     if (allImages.length > 0) {
-      userPrompt += '=== IMAGES ===\n';
-      allImages.forEach((img, i) => {
-        userPrompt += 'Image ' + (i+1) + ': ' + img + '\n';
-      });
-      userPrompt += '\n';
+      userPrompt += 'IMG: ' + allImages[0] + '\n';
     }
     
-    // Web sources
-    userPrompt += '=== WEB SOURCES (Tavily) ===\n';
-    tavilySources.slice(0, 5).forEach((s, i) => {
-      userPrompt += '[' + (i+1) + '] ' + s.title + '\nURL: ' + s.url + '\nContent: ' + (s.content || '').slice(0, 500) + '\n\n';
-    });
+    // Web sources (concise)
+    userPrompt += 'WEB: ';
+    userPrompt += tavilySources.slice(0, 2).map((s, i) => s.title).join('; ') || 'None';
+    userPrompt += '\n\n';
     
-    // Jina full content
-    if (jinaContent) {
-      userPrompt += '=== FULL ARTICLE (Jina Reader) ===\n' + jinaContent + '\n\n';
-    }
-    
-    userPrompt += '=== INSTRUCTIONS ===\n';
-    userPrompt += '- Write 3000+ words - this should be a MASSIVE article!\n';
-    userPrompt += '- Start with ## Introduction\n';
-    userPrompt += '- Use ## for major sections, ### for subsections\n';
-    userPrompt += '- Include PROPER markdown tables (| Header | Header |) - NOT ASCII art\n';
-    userPrompt += '- Add bullet points with - for lists\n';
-    userPrompt += '- Include all available images at the top: ![Topic](image_url)\n';
-    userPrompt += '- Bold key terms on first mention\n';
-    userPrompt += '- Cite sources inline: [1], [2], etc.\n';
-    userPrompt += '- End with ## References listing all sources\n';
-    userPrompt += '- Make it comprehensive, accurate, and engaging!\n';
+    // Instructions
+    userPrompt += 'Write 2000+ word article. ## Intro. Tables: |col|col|. Add IMG at top. Cite [1]. End Refs.';
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
@@ -385,7 +362,7 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
       const result = await callGroqDirect([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
-      ], model, 16000);
+      ], model, 8000);
       
       if (result.success && result.content && result.content.length >= 50) {
         content = cleanAiContent(result.content);
