@@ -271,7 +271,7 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
     const { data: existing, error: existingError } = await supabase
       .from('articles')
       .select('id, title')
-      .ilike('title', `%${topic}%`)
+      .ilike('title', '%' + topic + '%')
       .limit(1);
 
     if (existingError) {
@@ -285,60 +285,31 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
 
     console.log('[AutoGenerate] Fetching data sources...');
     
-    // Fetch all data sources in parallel
-    const [wikiSummary, wikiContent, wikiImages] = await Promise.all([
+    // Fetch sources in parallel
+    const [wikiSummary, wikiImages] = await Promise.all([
       fetchWikipediaFull(topic),
-      fetchWikipediaFullContent(topic),
       fetchWikipediaImages(topic),
     ]);
-
-    // Get Tavily sources and fetch full content with Jina for top results
-    const tavilySources = await fetchTavilyResearch(topic);
     
-    // Fetch additional content from top sources using Jina (quick)
-    let jinaContent = '';
-    if (tavilySources.length > 0) {
-      try {
-        jinaContent = await fetchWithJina(tavilySources[0].url);
-        if (jinaContent) jinaContent = jinaContent.slice(0, 1000);
-      } catch { jinaContent = ''; }
-    }
+    const tavilySources = await fetchTavilyResearch(topic);
+    const wikiImg = wikiImages?.thumbnail || '';
 
-    // Prepare image references
-    const imageUrls = [];
-    if (wikiImages?.thumbnail) {
-      imageUrls.push({ url: wikiImages.thumbnail, source: 'Wikipedia', alt: topic });
-    }
+    // Image for the article
+    const articleImage = wikiImages?.thumbnail || '';
 
     // Build citations
     const citations: { title: string; url: string; source: string }[] = [
-      ...(wikiSummary ? [{ title: (wikiSummary as any).title || topic, url: (wikiSummary as any).content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`, source: 'Wikipedia' }] : []),
-      ...tavilySources.map((s, i) => ({ title: s.title, url: s.url, source: 'Web' })),
+      ...(wikiSummary ? [{ title: (wikiSummary as any).title || topic, url: `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`, source: 'Wikipedia' }] : []),
+      ...tavilySources.slice(0, 3).map((s) => ({ title: s.title, url: s.url, source: 'Web' })),
     ];
 
     const citationsText = citations.length > 0 
-      ? '\n\n## References\n\n' + citations.map((c, i) => `${i + 1}. [${c.title}](${c.url}) - ${c.source}`).join('\n')
+      ? '\n\n## References\n\n' + citations.map((c, i) => `${i + 1}. [${c.title}](${c.url})`).join('\n')
       : '';
 
-    const imageSection = imageUrls.length > 0 
-      ? '\n\n## Images\n\n' + imageUrls.map((img, i) => `![${img.alt}](${img.url})`).join('\n\n')
-      : '';
+    const systemPrompt = 'Write about ' + topic + '. Use ## headings, tables, bullets. Add image. End with References.';
 
-    // Enhanced system prompt with all requirements
-    const systemPrompt = `Write encyclopedia articles in Markdown. Use ## for sections, ### for subsections. Include tables for facts, bullets for lists. Add images with ![alt](url). Cite [1], [2]. End with References. No code blocks.`;
-
-    const userPrompt = `Write a long encyclopedia article about "${topic}".
-
-WIKI: ${wikiSummary?.extract?.slice(0, 600) || 'None'}
-IMG: ${wikiImages?.thumbnail || 'None'}
-WEB: ${tavilySources[0]?.title || 'None'}
-
-Requirements:
-- Start with ## Introduction
-- 2500+ words, ## headings, ### subsections  
-- Tables for facts, bullets for lists
-- Add image at top: ![${topic}](URL)
-- Cite [1], [2] and end with References`;
+    const userPrompt = 'Article about ' + topic + '. ' + (wikiSummary?.extract?.slice(0, 300) || '') + (wikiImg ? ' Image: ' + wikiImg : '');
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
@@ -347,18 +318,18 @@ Requirements:
     let groqError = '';
     
     for (const model of models) {
-      console.log(`[AutoGenerate] Trying model: ${model}`);
+      console.log('[AutoGenerate] Trying model:', model);
       const result = await callGroqDirect([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
-      ], model, 10000); // Balance between output and limits
+      ], model, 10000);
       
       if (result.success && result.content && result.content.length >= 50) {
         content = cleanAiContent(result.content);
-        console.log(`[AutoGenerate] Success with model: ${model}, got ${content.length} chars`);
+        console.log('[AutoGenerate] Success, got:', content.length, 'chars');
         break;
       } else {
-        console.log(`[AutoGenerate] Model ${model} failed: ${result.error}, content length: ${result.content?.length || 0}`);
+        console.log('[AutoGenerate] Failed:', result.error, 'len:', result.content?.length || 0);
         groqError = result.error || 'Generation failed';
       }
     }
@@ -380,10 +351,10 @@ Requirements:
 
     const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     
-    // Add image section to content if we have images
+    // Add image to content
     let finalContent = content + citationsText;
-    if (wikiImages?.thumbnail) {
-      finalContent = `![${topic}](${wikiImages.thumbnail})\n\n` + finalContent;
+    if (articleImage) {
+      finalContent = '![' + topic + '](' + articleImage + ')\n\n' + finalContent;
     }
     
     const lines = content.split('\n');
@@ -404,7 +375,7 @@ Requirements:
         slug,
         content: finalContent,
         summary,
-        featured_image: wikiImages?.thumbnail || null,
+        featured_image: articleImage || null,
         status: 'published',
         author_id: '00000000-0000-0000-0000-000000000001',
         published_at: new Date().toISOString(),
@@ -432,7 +403,7 @@ Requirements:
       await supabase.from('citations').insert(citationsToInsert);
     }
 
-    console.log(`[AutoGenerate] Success: "${topic}" (${content.length} chars)`);
+    console.log('[AutoGenerate] Success:', topic, 'len:', content.length);
     return { success: true, generated: 1 };
 
   } catch (err: any) {
@@ -442,7 +413,7 @@ Requirements:
 }
 
 export async function regenerateArticle(topic: string): Promise<{ success: boolean; generated: number; error?: string }> {
-  console.log(`[Regenerate] Starting: ${topic}`);
+  console.log('[Regenerate] Starting:', topic);
 
   try {
     const supabase = getSupabaseAdmin();
@@ -450,7 +421,7 @@ export async function regenerateArticle(topic: string): Promise<{ success: boole
     await supabase
       .from('articles')
       .delete()
-      .ilike('title', `%${topic}%`);
+      .ilike('title', '%' + topic + '%');
 
     return autoGenerateArticles(topic);
   } catch (err: any) {
