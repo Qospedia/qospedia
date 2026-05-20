@@ -91,18 +91,25 @@ export async function callGroqDirect(
   model: string = 'llama-3.1-8b-instant',
   maxTokens: number = 16000
 ): Promise<{ content: string; success: boolean; error?: string }> {
+  // Try NVIDIA NIM first for Qwen model
+  if (model.includes('qwen')) {
+    const nvidiaResult = await callNvidiaNIM(messages, model, maxTokens);
+    if (nvidiaResult.success) return nvidiaResult;
+  }
+  
+  // Fallback to Groq
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return { content: '', success: false, error: 'GROQ_API_KEY not configured' };
   }
 
   try {
-    console.log(`[callGroqDirect] Using model: ${model}`);
+    console.log('[callGroqDirect] Using Groq model:', model);
     
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': 'Bearer ' + apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: maxTokens }),
@@ -110,16 +117,59 @@ export async function callGroqDirect(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.log(`[callGroqDirect] Error: ${response.status} - ${errorText.slice(0, 200)}`);
-      return { content: '', success: false, error: `HTTP ${response.status}: ${errorText}` };
+      console.log('[callGroqDirect] Error:', response.status, errorText.slice(0, 200));
+      return { content: '', success: false, error: 'HTTP ' + response.status + ': ' + errorText };
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
-    console.log(`[callGroqDirect] Success, got ${content.length} chars`);
+    console.log('[callGroqDirect] Success, got', content.length, 'chars');
     return { content, success: true };
   } catch (err: any) {
-    console.log(`[callGroqDirect] Exception: ${err.message}`);
+    console.log('[callGroqDirect] Exception:', err.message);
+    return { content: '', success: false, error: err.message };
+  }
+}
+
+async function callNvidiaNIM(
+  messages: { role: string; content: string }[],
+  model: string,
+  maxTokens: number
+): Promise<{ content: string; success: boolean; error?: string }> {
+  const apiKey = process.env.NVIDIA_API_KEY || process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    return { content: '', success: false, error: 'No API key configured' };
+  }
+
+  try {
+    console.log('[NVIDIA NIM] Calling model:', model);
+    
+    const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        model, 
+        messages, 
+        temperature: 0.7, 
+        max_tokens: maxTokens 
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('[NVIDIA NIM] Error:', response.status, errorText.slice(0, 200));
+      return { content: '', success: false, error: 'NVIDIA HTTP ' + response.status };
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    console.log('[NVIDIA NIM] Success, got', content.length, 'chars');
+    return { content, success: true };
+  } catch (err: any) {
+    console.log('[NVIDIA NIM] Exception:', err.message);
     return { content: '', success: false, error: err.message };
   }
 }

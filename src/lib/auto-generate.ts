@@ -313,7 +313,7 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
-    const models = ['llama-3.1-8b-instant']; // Fastest with highest limits
+    const models = ['qwen/qwen3.5-397b-a17b']; // Best free model on NVIDIA NIM - 397B MoE, 1M context
     let content = '';
     let groqError = '';
     
