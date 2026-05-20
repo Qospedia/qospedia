@@ -133,15 +133,15 @@ async function callGroq(
   const apiKey = getGroqApiKey();
   
   const models = [
-    'llama-3.3-70b-versatile',
-    'mixtral-8x7b-32768',
-    'llama-3.1-70b-versatile',
-    'qwen/qwen3-32b',
     'llama-3.1-8b-instant',
+    'qwen/qwen3-32b',
+    'llama-3.3-70b-versatile',
   ];
   
   for (const model of models) {
     try {
+      console.log(`[AutoGenerate] Trying model: ${model}`);
+      
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -164,18 +164,20 @@ async function callGroq(
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log(`[Groq] ${model} error: ${response.status} - ${errorText.slice(0, 100)}`);
+        console.log(`[AutoGenerate] ${model} error: ${response.status} - ${errorText.slice(0, 100)}`);
         continue;
       }
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || '';
+      console.log(`[AutoGenerate] ${model} returned ${content.length} chars`);
       
-      if (content && content.length > 500) {
+      if (content && content.length > 100) {
         return content;
       }
+      console.log(`[AutoGenerate] ${model} content too short: ${content.length}`);
     } catch (e: any) {
-      console.log(`[Groq] ${model} error: ${e.message}`);
+      console.log(`[AutoGenerate] ${model} error: ${e.message}`);
     }
   }
 

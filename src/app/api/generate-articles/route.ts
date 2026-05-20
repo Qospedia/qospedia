@@ -10,8 +10,8 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
 const MODELS = {
-  primary: 'qwen/qwen3-32b',
-  fallback: ['llama-3.1-8b-instant', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile'],
+  primary: 'llama-3.1-8b-instant',
+  fallback: ['qwen/qwen3-32b', 'llama-3.3-70b-versatile'],
 };
 
 const TOPICS = [

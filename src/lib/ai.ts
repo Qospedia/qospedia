@@ -1,13 +1,13 @@
 const GROQ_MODELS = {
   premium: 'llama-3.3-70b-versatile',
-  balanced: 'qwen/qwen3-32b',
-  fast: 'llama-3.1-8b-instant',
+  balanced: 'llama-3.1-8b-instant',
+  fast: 'qwen/qwen3-32b',
 };
 
 const FALLBACK_CHAIN = [
-  'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
   'qwen/qwen3-32b',
+  'llama-3.3-70b-versatile',
 ];
 
 interface ModelResult {
@@ -72,14 +72,15 @@ async function smartCallGroq(
 
   const modelOrder = [GROQ_MODELS[preferredTier], ...FALLBACK_CHAIN.filter(m => m !== GROQ_MODELS[preferredTier])];
   
-  console.log(`[Groq] Trying models: ${modelOrder.join(', ')}`);
+  console.log(`[SmartGroq] Trying models: ${modelOrder.join(', ')}`);
 
   for (const model of modelOrder) {
     const result = await callGroqWithRetry(model, messages, maxTokens);
     if (result.success && result.content) {
+      console.log(`[SmartGroq] Success with ${model}, got ${result.content.length} chars`);
       return { content: result.content, model };
     }
-    console.log(`[Groq] Model ${model} failed, trying next...`);
+    console.log(`[SmartGroq] Model ${model} failed, trying next...`);
   }
 
   throw new Error('All GROQ models failed');
@@ -87,7 +88,7 @@ async function smartCallGroq(
 
 export async function callGroqDirect(
   messages: { role: string; content: string }[],
-  model: string = 'llama-3.3-70b-versatile',
+  model: string = 'llama-3.1-8b-instant',
   maxTokens: number = 16000
 ): Promise<{ content: string; success: boolean; error?: string }> {
   const apiKey = process.env.GROQ_API_KEY;
@@ -96,6 +97,8 @@ export async function callGroqDirect(
   }
 
   try {
+    console.log(`[callGroqDirect] Using model: ${model}`);
+    
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -107,13 +110,16 @@ export async function callGroqDirect(
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.log(`[callGroqDirect] Error: ${response.status} - ${errorText.slice(0, 200)}`);
       return { content: '', success: false, error: `HTTP ${response.status}: ${errorText}` };
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
+    console.log(`[callGroqDirect] Success, got ${content.length} chars`);
     return { content, success: true };
   } catch (err: any) {
+    console.log(`[callGroqDirect] Exception: ${err.message}`);
     return { content: '', success: false, error: err.message };
   }
 }

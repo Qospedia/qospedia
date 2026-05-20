@@ -10,10 +10,12 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
 async function callGroqWithFallback(messages: { role: string; content: string }[], maxTokens: number = 8000): Promise<{ content: string; model: string }> {
-  const models = ['qwen/qwen3-32b', 'llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
+  const models = ['llama-3.1-8b-instant', 'qwen/qwen3-32b', 'llama-3.3-70b-versatile'];
 
   for (const model of models) {
     try {
+      console.log(`[Groq] Trying model: ${model}`);
+      
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -26,15 +28,23 @@ async function callGroqWithFallback(messages: { role: string; content: string }[
       if (response.ok) {
         const data = await response.json();
         const content = data.choices?.[0]?.message?.content || '';
-        if (content && content.length > 500) {
+        console.log(`[Groq] ${model} returned ${content.length} chars`);
+        
+        if (content && content.length > 100) {
           return { content, model };
         }
+        console.log(`[Groq] ${model} content too short: ${content.length}`);
+      } else {
+        const errorText = await response.text();
+        console.log(`[Groq] ${model} error: ${response.status} - ${errorText.slice(0, 200)}`);
       }
 
       if (response.status === 429) {
         await new Promise(r => setTimeout(r, 5000));
       }
-    } catch {}
+    } catch (e: any) {
+      console.log(`[Groq] ${model} exception: ${e.message}`);
+    }
   }
 
   throw new Error('All GROQ models failed');
