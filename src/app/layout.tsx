@@ -4,6 +4,7 @@ import { Footer } from '@/components/layout/footer';
 import { ToastProvider } from '@/components/ui/toast';
 import { Providers } from '@/components/providers';
 import { NavbarWrapper } from '@/components/layout/navbar-wrapper';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const playfair = Playfair_Display({
@@ -59,6 +60,7 @@ export default function RootLayout({
       </head>
       <body className={`${playfair.variable} min-h-screen flex flex-col bg-[#FCFCFC] dark:bg-[#050505] text-[#050505] dark:text-[#FCFCFC]`}>
         <Providers>
+          <Analytics />
           <NavbarWrapper />
           <main className="flex-1">{children}</main>
           <Footer />
