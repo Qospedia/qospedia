@@ -315,68 +315,35 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
       : '';
 
     // Enhanced system prompt with all requirements
-    const systemPrompt = `You are a professional encyclopedia article writer for Qospedia. Your goal is to create comprehensive, well-researched articles that rival Wikipedia in quality.
+    const systemPrompt = `You are a professional encyclopedia writer. Write comprehensive articles in Markdown.
 
-WRITE HIGH-QUALITY ENCYCLOPEDIA ARTICLES WITH:
-
-1. **Proper Structure**:
-   - Start with "## Introduction" 
-   - Use ## for major sections, ### for subsections
-   - Write AT LEAST 1500 words
-   - Include a proper conclusion section
-
-2. **Rich Content**:
-   - Include historical background and origins
-   - Explain key concepts and definitions
-   - Cover applications, uses, and real-world examples
-   - Discuss impact, significance, and controversies
-   - Add current research and future developments
-
-3. **Visual Elements** (when available):
-   - If image URLs are provided, include them with proper markdown: ![alt](url)
-   - Create tables for factual data, comparisons, timelines
-   - Use bullet points for lists of examples, types, features
-
-4. **Citations**:
-   - Cite sources inline with [1], [2], etc.
-   - Include a References section at the end with all sources
-   - Mix of Wikipedia and web sources is ideal
-
-5. **Formatting**:
-   - Use bold for key terms on first mention
-   - Use blockquotes for notable quotes
-   - No code blocks - this is for prose content
-   - Proper heading hierarchy
-
-6. **Prohibited**:
-   - NEVER include AI thinking or self-referential text
-   - No preamble or meta-commentary
-   - Start directly with the content
-
-Use the provided research data to write a comprehensive article. Combine Wikipedia's factual accuracy with engaging prose.`;
+RULES:
+- Start with ## Introduction
+- Use ## for sections, ### for subsections
+- Write 1500+ words
+- Add tables for facts, bullet points for lists
+- Include image if provided: ![alt](url)
+- Cite with [1], [2], etc.
+- End with References section
+- NO code blocks, NO AI thinking text`;
 
     const userPrompt = `Write a comprehensive encyclopedia article about "${topic}".
 
-WIKIPEDIA INFORMATION:
-${wikiSummary?.extract ? wikiSummary.extract.slice(0, 2000) : 'Not available'}
+WIKIPEDIA SUMMARY:
+${wikiSummary?.extract ? wikiSummary.extract.slice(0, 800) : 'Not available'}
 
-WIKIPEDIA FULL CONTENT:
-${wikiContent ? wikiContent.slice(0, 3000) : 'Not available'}
+${wikiImages?.thumbnail ? `IMAGE: ${wikiImages.thumbnail}` : ''}
 
-${wikiImages?.thumbnail ? `WIKIPEDIA IMAGE: ${wikiImages.thumbnail}` : ''}
+WEB SOURCES:
+${tavilySources.slice(0, 3).map((s, i) => `${i + 1}. ${s.title}: ${s.content?.slice(0, 200) || ''}`).join('\n') || 'None'}
 
-WEB SEARCH RESULTS (Tavily):
-${tavilySources.length > 0 ? tavilySources.map((s, i) => `[${i + 1}] ${s.title}\n${s.content?.slice(0, 500) || 'No content'}`).join('\n\n') : 'No web results available'}
-
-INSTRUCTIONS:
+REQUIREMENTS:
 - Start with "## Introduction"
-- Cover all major aspects of the topic
-- Include tables for factual information
-- Add relevant images if provided
-- Cite sources with [n] format
-- Include a References section at the end
-- Write at least 1500 words
-- Make it comprehensive and engaging`;
+- Write 1500+ words with ## headings
+- Include tables for facts
+- Add image if provided: ![topic](url)
+- Cite with [1], [2]
+- End with References section`;
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
@@ -389,7 +356,7 @@ INSTRUCTIONS:
       const result = await callGroqDirect([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
-      ], model, 16000);
+      ], model, 8000);
       
       if (result.success && result.content && result.content.length >= 100) {
         content = cleanAiContent(result.content);
