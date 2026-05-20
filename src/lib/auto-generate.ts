@@ -216,13 +216,20 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
   console.log(`[AutoGenerate] Starting: ${topic}`);
 
   try {
+    console.log('[AutoGenerate] Getting Supabase client...');
     const supabase = getSupabaseAdmin();
+    console.log('[AutoGenerate] Supabase client ready');
 
-    const { data: existing } = await supabase
+    console.log('[AutoGenerate] Checking for existing articles...');
+    const { data: existing, error: existingError } = await supabase
       .from('articles')
       .select('id, title')
       .ilike('title', `%${topic}%`)
       .limit(1);
+
+    if (existingError) {
+      console.log('[AutoGenerate] Error checking existing:', existingError.message);
+    }
 
     if (existing && existing.length > 0) {
       console.log(`[AutoGenerate] Article already exists: ${topic}`);

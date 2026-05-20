@@ -77,10 +77,19 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
 
   console.log('[Search] Starting auto-generate for:', query);
   
+  // Create a timeout promise
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Generation timed out after 30 seconds')), 30000)
+  );
+
   try {
     const { autoGenerateArticles } = await import('@/lib/auto-generate');
     console.log('[Search] Calling autoGenerateArticles...');
-    generationResult = await autoGenerateArticles(query);
+    
+    // Race the generation against a timeout
+    const genPromise = autoGenerateArticles(query);
+    generationResult = await Promise.race([genPromise, timeoutPromise]) as typeof generationResult;
+    
     console.log('[Search] Generation result:', JSON.stringify(generationResult));
   } catch (err: any) {
     console.error('[Search] Generation error:', err);
@@ -143,21 +152,27 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
 
   const displayError = generationResult.error || initialError;
 
-  if (displayError) {
-    console.log('[Search] Generation error (auto-saving):', displayError);
+  console.log('[Search] Generation result:', JSON.stringify(generationResult));
+  console.log('[Search] Initial error:', initialError);
+
+  // If no article was generated and no error message, provide a default message
+  const errorMessage = displayError || (generationResult.success === false ? 'AI generation failed. Please try again or suggest this topic.' : null);
+
+  if (errorMessage) {
+    console.log('[Search] Generation error:', displayError);
     return (
       <div className="text-center py-8">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-pulse">
-            <Sparkles className="h-10 w-10 text-[#2563EB]" />
+          <div className="text-[#EF4444]">
+            <Sparkles className="h-10 w-10" />
           </div>
-          <p className="text-[16px] text-[#636363]">
-            Preparing article for "{query}"...
-          </p>
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-[#2563EB]" />
-            <span className="text-[14px] text-[#858585]">Powered by Groq AI</span>
+          <div className="p-4 bg-[#FEF2F2] border border-[#EF4444] rounded-lg max-w-md">
+            <p className="text-[16px] font-medium text-[#EF4444] mb-2">Failed to generate article</p>
+            <p className="text-[14px] text-[#636363]">{errorMessage}</p>
           </div>
+          <Link href="/suggest" className="text-[14px] text-[#2563EB] hover:underline">
+            Or suggest this topic for manual creation
+          </Link>
         </div>
       </div>
     );
