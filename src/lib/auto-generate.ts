@@ -341,13 +341,6 @@ Requirements:
       
       return { success: false, generated: 0, error: groqError || 'AI service temporarily unavailable. Topic saved for later.' };
     }
-      await supabase.from('pending_articles').insert({
-        title: topic,
-        slug: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-        status: 'pending'
-      });
-      return { success: false, generated: 0, error: 'Generated content too short or invalid' };
-    }
 
     const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     
