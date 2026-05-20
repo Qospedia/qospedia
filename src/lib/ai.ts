@@ -1,5 +1,3 @@
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-
 const GROQ_MODELS = {
   premium: 'llama-3.3-70b-versatile',
   balanced: 'qwen/qwen3-32b',
@@ -8,10 +6,8 @@ const GROQ_MODELS = {
 
 const FALLBACK_CHAIN = [
   'llama-3.3-70b-versatile',
-  'qwen/qwen3-32b',
-  'openai/gpt-oss-20b',
-  'meta-llama/llama-4-scout-17b-16e-instruct',
   'llama-3.1-8b-instant',
+  'qwen/qwen3-32b',
 ];
 
 interface ModelResult {
@@ -25,32 +21,41 @@ async function callGroqWithRetry(
   messages: { role: string; content: string }[],
   maxTokens: number = 4096
 ): Promise<ModelResult> {
-  if (!GROQ_API_KEY) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
     throw new Error('GROQ_API_KEY not configured');
   }
 
   try {
+    console.log(`[Groq] Calling model: ${model}`);
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: maxTokens }),
     });
 
+    console.log(`[Groq] Response status: ${response.status}`);
+
     if (response.status === 429) {
+      console.log(`[Groq] Rate limited on ${model}`);
       return { model, content: '', success: false };
     }
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.log(`[Groq] Error response: ${errorText}`);
       return { model, content: '', success: false };
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
+    console.log(`[Groq] Success: ${model}, content length: ${content.length}`);
     return { model, content, success: !!content };
-  } catch {
+  } catch (err) {
+    console.error(`[Groq] Exception:`, err);
     return { model, content: '', success: false };
   }
 }
@@ -60,21 +65,57 @@ async function smartCallGroq(
   maxTokens: number = 4096,
   preferredTier: keyof typeof GROQ_MODELS = 'balanced'
 ): Promise<{ content: string; model: string }> {
-  if (!GROQ_API_KEY) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
     throw new Error('GROQ_API_KEY not configured');
   }
 
   const modelOrder = [GROQ_MODELS[preferredTier], ...FALLBACK_CHAIN.filter(m => m !== GROQ_MODELS[preferredTier])];
+  
+  console.log(`[Groq] Trying models: ${modelOrder.join(', ')}`);
 
   for (const model of modelOrder) {
     const result = await callGroqWithRetry(model, messages, maxTokens);
     if (result.success && result.content) {
-      console.log(`[Groq] Success: ${model}`);
       return { content: result.content, model };
     }
+    console.log(`[Groq] Model ${model} failed, trying next...`);
   }
 
   throw new Error('All GROQ models failed');
+}
+
+export async function callGroqDirect(
+  messages: { role: string; content: string }[],
+  model: string = 'llama-3.3-70b-versatile',
+  maxTokens: number = 16000
+): Promise<{ content: string; success: boolean; error?: string }> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    return { content: '', success: false, error: 'GROQ_API_KEY not configured' };
+  }
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: maxTokens }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return { content: '', success: false, error: `HTTP ${response.status}: ${errorText}` };
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    return { content, success: true };
+  } catch (err: any) {
+    return { content: '', success: false, error: err.message };
+  }
 }
 
 export async function callGroq(

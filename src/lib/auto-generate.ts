@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { callGroqDirect } from './ai';
 
 interface SourceData {
   title: string;
@@ -310,27 +311,36 @@ Requirements:
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
-    let content;
-    try {
-      content = await callGroq([
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'qwen/qwen3-32b'];
+    let content = '';
+    let groqError = '';
+    
+    for (const model of models) {
+      const result = await callGroqDirect([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
-      ], 16000);
+      ], model, 16000);
       
-      content = cleanAiContent(content);
-    } catch (groqError) {
-      console.log('[AutoGenerate] GROQ failed, saving topic to pending...');
+      if (result.success && result.content && result.content.length >= 800) {
+        content = cleanAiContent(result.content);
+        console.log(`[AutoGenerate] Success with model: ${model}`);
+        break;
+      } else {
+        console.log(`[AutoGenerate] Model ${model} failed: ${result.error}`);
+        groqError = result.error || 'Generation failed';
+      }
+    }
+    
+    if (!content || content.length < 800) {
+      console.log('[AutoGenerate] Content too short or generation failed, saving topic to pending...');
       await supabase.from('pending_articles').insert({
         title: topic,
         slug: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
         status: 'pending'
-      }).select().single();
+      });
       
-      return { success: false, generated: 0, error: 'AI service temporarily unavailable. Topic saved for later.' };
+      return { success: false, generated: 0, error: groqError || 'AI service temporarily unavailable. Topic saved for later.' };
     }
-
-    if (!content || content.length < 800) {
-      console.log('[AutoGenerate] Content too short:', content?.length);
       await supabase.from('pending_articles').insert({
         title: topic,
         slug: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
