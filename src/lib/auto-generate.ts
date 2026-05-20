@@ -296,16 +296,6 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
     console.log('[AutoGenerate] Fetching Tavily web sources...');
     const tavilySources = await fetchTavilyResearch(topic);
     
-    // Fetch full content from top sources using Jina
-    let jinaContent = '';
-    if (tavilySources.length > 0) {
-      try {
-        console.log('[AutoGenerate] Fetching Jina content from:', tavilySources[0].url);
-        jinaContent = await fetchWithJina(tavilySources[0].url);
-        jinaContent = jinaContent.slice(0, 3000);
-      } catch(e) { console.log('[AutoGenerate] Jina fetch failed:', e); }
-    }
-    
     // Collect all available images
     const allImages: string[] = [];
     if (wikiImages?.thumbnail) allImages.push(wikiImages.thumbnail);
@@ -362,7 +352,7 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
       const result = await callGroqDirect([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
-      ], model, 8000);
+      ], model, 4096);
       
       if (result.success && result.content && result.content.length >= 50) {
         content = cleanAiContent(result.content);
