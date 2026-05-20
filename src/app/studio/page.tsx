@@ -17,7 +17,7 @@ import {
 
 const ADMIN_EMAIL = 'ceptile.com@gmail.com';
 
-type TabType = 'overview' | 'articles' | 'users' | 'analytics' | 'content' | 'security' | 'settings';
+type TabType = 'overview' | 'articles' | 'suggestions' | 'users' | 'analytics' | 'content' | 'security' | 'settings';
 
 export default function StudioPage() {
   const router = useRouter();
@@ -181,6 +181,65 @@ export default function StudioPage() {
     setEditingContent(type);
   };
 
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+
+  const handleGenerateArticle = async (suggestion: any) => {
+    if (generatingId) return;
+    setGeneratingId(suggestion.id);
+    
+    try {
+      const topic = suggestion.topic || suggestion.details?.slice(0, 100);
+      if (!topic) {
+        toast({ title: 'Error', description: 'No topic to generate', variant: 'destructive' });
+        return;
+      }
+
+      const response = await fetch('/api/generate-single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, suggestionId: suggestion.id }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({ title: 'Success', description: `Article "${result.article?.title}" generated!` });
+        await handleUpdateSuggestion(suggestion.id, 'approved');
+      } else {
+        toast({ title: 'Error', description: result.error || 'Failed to generate article', variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to generate article', variant: 'destructive' });
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
+  const handleBulkGenerate = async () => {
+    if (generatingId) return;
+    setGeneratingId('bulk');
+    
+    try {
+      const response = await fetch('/api/generate-articles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey: 'qospedia-admin-2024' }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({ title: 'Success', description: `Generated ${result.generated} articles!` });
+      } else {
+        toast({ title: 'Error', description: result.error || 'Failed to generate articles', variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to generate articles', variant: 'destructive' });
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#050505]">
@@ -194,6 +253,7 @@ export default function StudioPage() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'articles', label: 'Articles', icon: FileText },
+    { id: 'suggestions', label: 'Suggestions', icon: Lightbulb },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'content', label: 'Content Editor', icon: Edit3 },
@@ -383,6 +443,96 @@ export default function StudioPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'suggestions' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[18px] font-semibold">Article Suggestions</h2>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={handleBulkGenerate}
+                  disabled={generatingId === 'bulk'}
+                  className="bg-[#22C55E] hover:bg-[#16A34A]"
+                >
+                  {generatingId === 'bulk' ? (
+                    <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
+                  ) : (
+                    <><Lightbulb className="h-4 w-4 mr-2" /> Auto-Generate Articles</>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              {suggestions.length === 0 ? (
+                <div className="text-center py-12 text-[#858585]">
+                  No suggestions yet. Users can submit article suggestions from the /suggest page.
+                </div>
+              ) : (
+                suggestions.map((suggestion) => (
+                  <div key={suggestion.id} className="bg-[#0A0A0A] border border-[rgba(252,252,252,0.1)] rounded-xl p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-[16px] font-semibold">{suggestion.topic || 'No topic'}</h3>
+                          <span className={`text-[12px] px-2 py-0.5 rounded ${
+                            suggestion.status === 'approved' ? 'bg-[#22C55E]/20 text-[#22C55E]' :
+                            suggestion.status === 'rejected' ? 'bg-[#EF4444]/20 text-[#EF4444]' :
+                            'bg-[#F59E0B]/20 text-[#F59E0B]'
+                          }`}>{suggestion.status}</span>
+                          <span className="text-[12px] text-[#858585] capitalize">{suggestion.type}</span>
+                        </div>
+                        {suggestion.details && (
+                          <p className="text-[14px] text-[#858585] mb-2">{suggestion.details}</p>
+                        )}
+                        <p className="text-[12px] text-[#636363]">Submitted {formatDate(suggestion.created_at)}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        {suggestion.status === 'pending' && (
+                          <>
+                            <Button
+                              onClick={() => handleGenerateArticle(suggestion)}
+                              disabled={generatingId === suggestion.id}
+                              className="bg-[#2563EB] hover:bg-[#1d4ed8]"
+                            >
+                              {generatingId === suggestion.id ? (
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                              ) : (
+                                'Generate Article'
+                              )}
+                            </Button>
+                            <Button
+                              onClick={() => handleUpdateSuggestion(suggestion.id, 'approved')}
+                              variant="outline"
+                              className="border-[#22C55E] text-[#22C55E] hover:bg-[#22C55E]/10"
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              onClick={() => handleUpdateSuggestion(suggestion.id, 'rejected')}
+                              variant="outline"
+                              className="border-[#EF4444] text-[#EF4444] hover:bg-[#EF4444]/10"
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                        {suggestion.status === 'approved' && (
+                          <span className="text-[14px] text-[#22C55E] flex items-center gap-1">
+                            <CheckCircle className="h-4 w-4" /> Article generated
+                          </span>
+                        )}
+                        {suggestion.status === 'rejected' && (
+                          <span className="text-[14px] text-[#858585]">Rejected</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
