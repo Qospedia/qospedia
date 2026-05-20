@@ -99,6 +99,53 @@ async function fetchWikipediaFullContent(topic: string): Promise<string> {
   }
 }
 
+interface WikipediaImages {
+  thumbnail: string | null;
+  original: string | null;
+  description: string;
+  infobox: Record<string, string> | null;
+}
+
+async function fetchWikipediaImages(topic: string): Promise<WikipediaImages> {
+  try {
+    const res = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(topic)}&prop=pageimages|extracts&exintro=false&explaintext=true&pithumbsize=500&format=json&origin=*`,
+      { next: { revalidate: 3600 } }
+    );
+    
+    if (!res.ok) return { thumbnail: null, original: null, description: '', infobox: null };
+    
+    const data = await res.json();
+    const pages = data.query?.pages;
+    if (!pages) return { thumbnail: null, original: null, description: '', infobox: null };
+    
+    const page = Object.values(pages)[0] as any;
+    const thumbnail = page.thumbnail?.source || null;
+    const original = page.originalimage?.source || thumbnail;
+    const description = page.extract?.slice(0, 500) || '';
+    
+    return { thumbnail, original, description, infobox: null };
+  } catch {
+    return { thumbnail: null, original: null, description: '', infobox: null };
+  }
+}
+
+async function fetchWikipediaSections(topic: string): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(topic)}&prop=text&format=json&origin=*`,
+      { next: { revalidate: 3600 } }
+    );
+    
+    if (!res.ok) return '';
+    
+    const data = await res.json();
+    return data.parse?.text?.['*'] || '';
+  } catch {
+    return '';
+  }
+}
+
 async function fetchTavilyResearch(topic: string): Promise<SourceData[]> {
   const apiKey = getTavilyApiKey();
   if (!apiKey) return [];
@@ -238,61 +285,98 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
 
     console.log('[AutoGenerate] Fetching data sources...');
     
-    const [wikiSummary, wikiContent] = await Promise.all([
+    // Fetch all data sources in parallel
+    const [wikiSummary, wikiContent, wikiImages] = await Promise.all([
       fetchWikipediaFull(topic),
       fetchWikipediaFullContent(topic),
+      fetchWikipediaImages(topic),
     ]);
 
     const tavilySources = await fetchTavilyResearch(topic);
 
-    const citations = tavilySources.map((s, i) => ({
-      source_title: s.title,
-      source_url: s.url,
-      source_author: '',
-      source_date: ''
-    }));
+    // Prepare image references
+    const imageUrls = [];
+    if (wikiImages?.thumbnail) {
+      imageUrls.push({ url: wikiImages.thumbnail, source: 'Wikipedia', alt: topic });
+    }
+
+    // Build citations
+    const citations: { title: string; url: string; source: string }[] = [
+      ...(wikiSummary ? [{ title: (wikiSummary as any).title || topic, url: (wikiSummary as any).content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`, source: 'Wikipedia' }] : []),
+      ...tavilySources.map((s, i) => ({ title: s.title, url: s.url, source: 'Web' })),
+    ];
 
     const citationsText = citations.length > 0 
-      ? '\n\n## References\n\n' + citations.map((c, i) => `${i + 1}. [${c.source_title}](${c.source_url})`).join('\n')
+      ? '\n\n## References\n\n' + citations.map((c, i) => `${i + 1}. [${c.title}](${c.url}) - ${c.source}`).join('\n')
       : '';
 
-    const systemPrompt = `You are a professional encyclopedia writer for Qospedia. Write comprehensive, well-structured articles.
+    const imageSection = imageUrls.length > 0 
+      ? '\n\n## Images\n\n' + imageUrls.map((img, i) => `![${img.alt}](${img.url})`).join('\n\n')
+      : '';
 
-RULES:
-1. NEVER include AI thinking or self-referential text
-2. Start immediately with "## Introduction"
-3. Write AT LEAST 1500 words
-4. Use ## for major sections, ### for subsections
-5. Include tables for factual information
-6. Cite sources inline with [1], [2]
-7. Do NOT use code blocks
+    // Enhanced system prompt with all requirements
+    const systemPrompt = `You are a professional encyclopedia article writer for Qospedia. Your goal is to create comprehensive, well-researched articles that rival Wikipedia in quality.
 
-SECTIONS TO INCLUDE:
-## Introduction
-## Historical Background
-## Key Concepts
-## Applications and Uses
-## Impact and Significance
-## Notable Examples
-## Current Research
-## Challenges and Controversies
-## Future Outlook
-## References
+WRITE HIGH-QUALITY ENCYCLOPEDIA ARTICLES WITH:
 
-Start with "## Introduction". No preamble.`;
+1. **Proper Structure**:
+   - Start with "## Introduction" 
+   - Use ## for major sections, ### for subsections
+   - Write AT LEAST 1500 words
+   - Include a proper conclusion section
 
-    const userPrompt = `Write a 1500+ word encyclopedia article about "${topic}".
+2. **Rich Content**:
+   - Include historical background and origins
+   - Explain key concepts and definitions
+   - Cover applications, uses, and real-world examples
+   - Discuss impact, significance, and controversies
+   - Add current research and future developments
 
-Wikipedia Info: ${wikiSummary?.extract ? wikiSummary.extract.slice(0, 1500) : 'Not available'}
+3. **Visual Elements** (when available):
+   - If image URLs are provided, include them with proper markdown: ![alt](url)
+   - Create tables for factual data, comparisons, timelines
+   - Use bullet points for lists of examples, types, features
 
-${tavilySources.length > 0 ? 'Sources:\n' + tavilySources.slice(0, 5).map((s, i) => `[${i + 1}] ${s.title}`).join('\n') : ''}
+4. **Citations**:
+   - Cite sources inline with [1], [2], etc.
+   - Include a References section at the end with all sources
+   - Mix of Wikipedia and web sources is ideal
 
-Requirements:
+5. **Formatting**:
+   - Use bold for key terms on first mention
+   - Use blockquotes for notable quotes
+   - No code blocks - this is for prose content
+   - Proper heading hierarchy
+
+6. **Prohibited**:
+   - NEVER include AI thinking or self-referential text
+   - No preamble or meta-commentary
+   - Start directly with the content
+
+Use the provided research data to write a comprehensive article. Combine Wikipedia's factual accuracy with engaging prose.`;
+
+    const userPrompt = `Write a comprehensive encyclopedia article about "${topic}".
+
+WIKIPEDIA INFORMATION:
+${wikiSummary?.extract ? wikiSummary.extract.slice(0, 2000) : 'Not available'}
+
+WIKIPEDIA FULL CONTENT:
+${wikiContent ? wikiContent.slice(0, 3000) : 'Not available'}
+
+${wikiImages?.thumbnail ? `WIKIPEDIA IMAGE: ${wikiImages.thumbnail}` : ''}
+
+WEB SEARCH RESULTS (Tavily):
+${tavilySources.length > 0 ? tavilySources.map((s, i) => `[${i + 1}] ${s.title}\n${s.content?.slice(0, 500) || 'No content'}`).join('\n\n') : 'No web results available'}
+
+INSTRUCTIONS:
 - Start with "## Introduction"
-- Include all major sections with ### subsections
-- Use tables for facts
-- Cite sources with [n]
-- No thinking text, no code blocks`;
+- Cover all major aspects of the topic
+- Include tables for factual information
+- Add relevant images if provided
+- Cite sources with [n] format
+- Include a References section at the end
+- Write at least 1500 words
+- Make it comprehensive and engaging`;
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
@@ -334,6 +418,12 @@ Requirements:
 
     const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     
+    // Add image section to content if we have images
+    let finalContent = content + citationsText;
+    if (wikiImages?.thumbnail) {
+      finalContent = `![${topic}](${wikiImages.thumbnail})\n\n` + finalContent;
+    }
+    
     const lines = content.split('\n');
     const firstParagraph = lines.find(l => 
       l.trim() && 
@@ -350,8 +440,9 @@ Requirements:
       .insert({
         title: topic,
         slug,
-        content: content + citationsText,
+        content: finalContent,
         summary,
+        featured_image: wikiImages?.thumbnail || null,
         status: 'published',
         author_id: '00000000-0000-0000-0000-000000000001',
         published_at: new Date().toISOString(),
@@ -369,10 +460,10 @@ Requirements:
     if (citations.length > 0 && articleData) {
       const citationsToInsert = citations.map((c, i) => ({
         article_id: articleData.id,
-        source_title: c.source_title,
-        source_url: c.source_url,
-        source_author: c.source_author,
-        source_date: c.source_date,
+        source_title: c.title,
+        source_url: c.url,
+        source_author: '',
+        source_date: '',
         order_index: i + 1
       }));
 
