@@ -289,33 +289,38 @@ Requirements:
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'qwen/qwen3-32b'];
+    const models = ['llama-3.1-8b-instant', 'qwen/qwen3-32b', 'llama-3.3-70b-versatile'];
     let content = '';
     let groqError = '';
     
     for (const model of models) {
+      console.log(`[AutoGenerate] Trying model: ${model}`);
       const result = await callGroqDirect([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ], model, 16000);
       
-      if (result.success && result.content && result.content.length >= 800) {
+      if (result.success && result.content && result.content.length >= 100) {
         content = cleanAiContent(result.content);
-        console.log(`[AutoGenerate] Success with model: ${model}`);
+        console.log(`[AutoGenerate] Success with model: ${model}, got ${content.length} chars`);
         break;
       } else {
-        console.log(`[AutoGenerate] Model ${model} failed: ${result.error}`);
+        console.log(`[AutoGenerate] Model ${model} failed: ${result.error}, content length: ${result.content?.length || 0}`);
         groqError = result.error || 'Generation failed';
       }
     }
     
-    if (!content || content.length < 800) {
+    if (!content || content.length < 100) {
       console.log('[AutoGenerate] Content too short or generation failed, saving topic to pending...');
-      await supabase.from('pending_articles').insert({
-        title: topic,
-        slug: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-        status: 'pending'
-      });
+      try {
+        await supabase.from('pending_articles').insert({
+          title: topic,
+          slug: topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+          status: 'pending'
+        });
+      } catch (e) {
+        console.log('[AutoGenerate] Could not save to pending_articles:', e);
+      }
       
       return { success: false, generated: 0, error: groqError || 'AI service temporarily unavailable. Topic saved for later.' };
     }

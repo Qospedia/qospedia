@@ -75,13 +75,20 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
 
   let generationResult: { success: boolean; generated: number; error?: string } = { success: false, generated: 0 };
 
+  console.log('[Search] Starting auto-generate for:', query);
+  
   try {
     const { autoGenerateArticles } = await import('@/lib/auto-generate');
+    console.log('[Search] Calling autoGenerateArticles...');
     generationResult = await autoGenerateArticles(query);
     console.log('[Search] Generation result:', JSON.stringify(generationResult));
   } catch (err: any) {
     console.error('[Search] Generation error:', err);
-    generationResult = { success: false, generated: 0, error: err.message || 'Failed to generate article' };
+    generationResult = { 
+      success: false, 
+      generated: 0, 
+      error: err.message || String(err) || 'Failed to generate article' 
+    };
   }
 
   if (generationResult.success && generationResult.generated > 0) {
