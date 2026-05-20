@@ -295,14 +295,13 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
     // Get Tavily sources and fetch full content with Jina for top results
     const tavilySources = await fetchTavilyResearch(topic);
     
-    // Fetch additional content from top sources using Jina
+    // Fetch additional content from top sources using Jina (quick)
     let jinaContent = '';
     if (tavilySources.length > 0) {
-      const topUrl = tavilySources[0].url;
-      jinaContent = await fetchWithJina(topUrl);
-      if (jinaContent) {
-        jinaContent = jinaContent.slice(0, 2000); // Limit Jina content
-      }
+      try {
+        jinaContent = await fetchWithJina(tavilySources[0].url);
+        if (jinaContent) jinaContent = jinaContent.slice(0, 1000);
+      } catch { jinaContent = ''; }
     }
 
     // Prepare image references
@@ -326,41 +325,24 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
       : '';
 
     // Enhanced system prompt with all requirements
-    const systemPrompt = `You are a professional encyclopedia writer. Write comprehensive articles in Markdown.
+    const systemPrompt = `Write encyclopedia articles in Markdown. Use ## for sections, ### for subsections. Include tables for facts, bullets for lists. Add images with ![alt](url). Cite [1], [2]. End with References. No code blocks.`;
 
-RULES:
+    const userPrompt = `Write a long encyclopedia article about "${topic}".
+
+WIKI: ${wikiSummary?.extract?.slice(0, 600) || 'None'}
+IMG: ${wikiImages?.thumbnail || 'None'}
+WEB: ${tavilySources[0]?.title || 'None'}
+
+Requirements:
 - Start with ## Introduction
-- Use ## for sections, ### for subsections
-- Write 1500+ words
-- Add tables for facts, bullet points for lists
-- Include image if provided: ![alt](url)
-- Cite with [1], [2], etc.
-- End with References section
-- NO code blocks, NO AI thinking text`;
-
-    const userPrompt = `Write a MASSIVE comprehensive encyclopedia article about "${topic}" (3000+ words).
-
-RESEARCH DATA:
-1. WIKIPEDIA: ${wikiSummary?.extract ? wikiSummary.extract.slice(0, 1000) : 'N/A'}
-2. WIKIPEDIA IMAGE: ${wikiImages?.thumbnail || 'None'}
-3. WEB SEARCH: ${tavilySources.slice(0, 5).map((s, i) => `[${i+1}] ${s.title}: ${s.content?.slice(0, 150) || ''}`).join('\n')}
-4. FULL WEB CONTENT (Jina): ${jinaContent ? jinaContent.slice(0, 1500) : 'Not available'}
-
-WRITE:
-- Start with ## Introduction
-- Use ## for major sections, ### for subsections
-- 3000+ words minimum (this is a massive article)
-- Include tables for factual data
-- Add bullet points for lists, examples
-- Include Wikipedia image: ![${topic}](image_url)
-- Cite sources with [1], [2], etc.
-- End with ## References section listing all sources
-
-Create the most comprehensive article possible!`;
+- 2500+ words, ## headings, ### subsections  
+- Tables for facts, bullets for lists
+- Add image at top: ![${topic}](URL)
+- Cite [1], [2] and end with References`;
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
-    const models = ['llama-3.1-8b-instant', 'qwen/qwen3-32b', 'llama-3.3-70b-versatile'];
+    const models = ['llama-3.1-8b-instant']; // Fastest with highest limits
     let content = '';
     let groqError = '';
     
@@ -369,7 +351,7 @@ Create the most comprehensive article possible!`;
       const result = await callGroqDirect([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
-      ], model, 12000); // Increased for massive articles
+      ], model, 10000); // Balance between output and limits
       
       if (result.success && result.content && result.content.length >= 50) {
         content = cleanAiContent(result.content);
