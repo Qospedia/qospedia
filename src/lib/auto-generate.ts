@@ -292,7 +292,18 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
       fetchWikipediaImages(topic),
     ]);
 
+    // Get Tavily sources and fetch full content with Jina for top results
     const tavilySources = await fetchTavilyResearch(topic);
+    
+    // Fetch additional content from top sources using Jina
+    let jinaContent = '';
+    if (tavilySources.length > 0) {
+      const topUrl = tavilySources[0].url;
+      jinaContent = await fetchWithJina(topUrl);
+      if (jinaContent) {
+        jinaContent = jinaContent.slice(0, 2000); // Limit Jina content
+      }
+    }
 
     // Prepare image references
     const imageUrls = [];
@@ -327,23 +338,25 @@ RULES:
 - End with References section
 - NO code blocks, NO AI thinking text`;
 
-    const userPrompt = `Write a comprehensive encyclopedia article about "${topic}".
+    const userPrompt = `Write a MASSIVE comprehensive encyclopedia article about "${topic}" (3000+ words).
 
-WIKIPEDIA SUMMARY:
-${wikiSummary?.extract ? wikiSummary.extract.slice(0, 800) : 'Not available'}
+RESEARCH DATA:
+1. WIKIPEDIA: ${wikiSummary?.extract ? wikiSummary.extract.slice(0, 1000) : 'N/A'}
+2. WIKIPEDIA IMAGE: ${wikiImages?.thumbnail || 'None'}
+3. WEB SEARCH: ${tavilySources.slice(0, 5).map((s, i) => `[${i+1}] ${s.title}: ${s.content?.slice(0, 150) || ''}`).join('\n')}
+4. FULL WEB CONTENT (Jina): ${jinaContent ? jinaContent.slice(0, 1500) : 'Not available'}
 
-${wikiImages?.thumbnail ? `IMAGE: ${wikiImages.thumbnail}` : ''}
+WRITE:
+- Start with ## Introduction
+- Use ## for major sections, ### for subsections
+- 3000+ words minimum (this is a massive article)
+- Include tables for factual data
+- Add bullet points for lists, examples
+- Include Wikipedia image: ![${topic}](image_url)
+- Cite sources with [1], [2], etc.
+- End with ## References section listing all sources
 
-WEB SOURCES:
-${tavilySources.slice(0, 3).map((s, i) => `${i + 1}. ${s.title}: ${s.content?.slice(0, 200) || ''}`).join('\n') || 'None'}
-
-REQUIREMENTS:
-- Start with "## Introduction"
-- Write 1500+ words with ## headings
-- Include tables for facts
-- Add image if provided: ![topic](url)
-- Cite with [1], [2]
-- End with References section`;
+Create the most comprehensive article possible!`;
 
     console.log('[AutoGenerate] Generating with GROQ...');
     
@@ -356,9 +369,9 @@ REQUIREMENTS:
       const result = await callGroqDirect([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
-      ], model, 8000);
+      ], model, 12000); // Increased for massive articles
       
-      if (result.success && result.content && result.content.length >= 100) {
+      if (result.success && result.content && result.content.length >= 50) {
         content = cleanAiContent(result.content);
         console.log(`[AutoGenerate] Success with model: ${model}, got ${content.length} chars`);
         break;
@@ -368,7 +381,7 @@ REQUIREMENTS:
       }
     }
     
-    if (!content || content.length < 100) {
+    if (!content || content.length < 50) {
       console.log('[AutoGenerate] Content too short or generation failed, saving topic to pending...');
       try {
         await supabase.from('pending_articles').insert({
