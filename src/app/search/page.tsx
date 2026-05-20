@@ -77,9 +77,9 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
 
   console.log('[Search] Starting auto-generate for:', query);
   
-  // Create a timeout promise
+  // Create a timeout promise - increased to 2 minutes for large articles
   const timeoutPromise = new Promise((_, reject) => 
-    setTimeout(() => reject(new Error('Generation timed out after 30 seconds')), 30000)
+    setTimeout(() => reject(new Error('Generation timed out after 2 minutes')), 120000)
   );
 
   try {
