@@ -247,67 +247,43 @@ export async function autoGenerateArticles(topic: string): Promise<{ success: bo
       ? '\n\n## References\n\n' + citations.map((c, i) => `${i + 1}. [${c.source_title}](${c.source_url})`).join('\n')
       : '';
 
-    const systemPrompt = `You are a professional encyclopedia writer for Qospedia. Your articles are comprehensive, well-structured, and rival Wikipedia in quality.
+    const systemPrompt = `You are a professional encyclopedia writer for Qospedia. Write comprehensive, well-structured articles.
 
-STRICT RULES - FOLLOW THESE OR YOUR OUTPUT WILL BE REJECTED:
-1. NEVER include any AI thinking, reasoning, or self-referential text
-2. NEVER start with "<think>" or any analysis narration
-3. NEVER use first person or say things like "I will write" or "Let me explain"
-4. Start immediately with "## Introduction" or the first heading
-5. Write AT LEAST 1500 words - quality and length matter
-6. Use proper Markdown: ## for major sections, ### for subsections
-7. Use tables (| col | col |) for factual information
-8. Use bullet points for lists
-9. Cite sources with [1], [2], etc. inline
+RULES:
+1. NEVER include AI thinking or self-referential text
+2. Start immediately with "## Introduction"
+3. Write AT LEAST 1500 words
+4. Use ## for major sections, ### for subsections
+5. Include tables for factual information
+6. Cite sources inline with [1], [2]
+7. Do NOT use code blocks
 
-ARTICLE STRUCTURE - INCLUDE ALL SECTIONS:
-## Introduction (2-3 paragraphs defining the topic)
-## Historical Background (origin, development over time)
-## Key Concepts (main ideas explained)
-## Applications and Uses (real-world examples)
-## Impact and Significance (cultural, scientific, social impact)
-## Notable Examples or Case Studies (specific instances)
-## Current Research and Developments (recent advancements)
-## Challenges and Controversies (debates, problems, criticism)
-## Future Outlook (predictions, potential developments)
-## References (source list)
+SECTIONS TO INCLUDE:
+## Introduction
+## Historical Background
+## Key Concepts
+## Applications and Uses
+## Impact and Significance
+## Notable Examples
+## Current Research
+## Challenges and Controversies
+## Future Outlook
+## References
 
-FORMATTING REQUIREMENTS:
-- Each major section should be 150-300 words
-- Include tables for factual comparisons
-- Use ### for sub-sections within main sections
-- Add bullet points for lists of items
-- Cite sources inline with [1], [2], etc.
-- Do NOT wrap anything in code blocks (no triple backticks)
-- Do NOT include any thinking text
-- Start directly with "## Introduction"
-- Use Wikipedia-style internal links like [[Topic Name]] for related concepts
+Start with "## Introduction". No preamble.`;
 
-OUTPUT ONLY THE ARTICLE - NO PREAMBLE OR EXPLANATION`;
+    const userPrompt = `Write a 1500+ word encyclopedia article about "${topic}".
 
-    const wikipediaContent = wikiContent ? wikiContent.slice(0, 6000) : '';
-    const sourcesText = tavilySources.length > 0 
-      ? '\n\nRESEARCH SOURCES:\n' + tavilySources.map((s, i) => `[${i + 1}] ${s.title}: ${s.content?.slice(0, 300) || 'No description'}...`).join('\n\n')
-      : '';
+Wikipedia Info: ${wikiSummary?.extract ? wikiSummary.extract.slice(0, 1500) : 'Not available'}
 
-    const userPrompt = `Write a comprehensive encyclopedia article about "${topic}".
-
-WIKIPEDIA SUMMARY:
-${wikiSummary?.extract || 'Not available'}
-
-WIKIPEDIA FULL CONTENT:
-${wikipediaContent || 'Not available'}${sourcesText}
+${tavilySources.length > 0 ? 'Sources:\n' + tavilySources.slice(0, 5).map((s, i) => `[${i + 1}] ${s.title}`).join('\n') : ''}
 
 Requirements:
-- Minimum 1500 words
-- Professional encyclopedia style
-- Proper section headings (## and ###)
-- Include data tables where relevant
-- Cite sources with [n] inline
-- No AI thinking text
-- Start with ## Introduction
-- No code blocks in output
-- Use [[Topic Name]] internal links for related concepts`;
+- Start with "## Introduction"
+- Include all major sections with ### subsections
+- Use tables for facts
+- Cite sources with [n]
+- No thinking text, no code blocks`;
 
     console.log('[AutoGenerate] Generating with GROQ...');
     

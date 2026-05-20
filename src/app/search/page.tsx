@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { Search as SearchIcon, FileText, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { Search as SearchIcon, FileText, Loader2, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -136,6 +136,26 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
 
   const displayError = generationResult.error || initialError;
 
+  if (displayError) {
+    console.log('[Search] Generation error (auto-saving):', displayError);
+    return (
+      <div className="text-center py-8">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-pulse">
+            <Sparkles className="h-10 w-10 text-[#2563EB]" />
+          </div>
+          <p className="text-[16px] text-[#636363]">
+            Preparing article for "{query}"...
+          </p>
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-[#2563EB]" />
+            <span className="text-[14px] text-[#858585]">Powered by Groq AI</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="text-center py-8">
       <div className="flex flex-col items-center gap-4">
@@ -150,29 +170,6 @@ async function GeneratingArticle({ query, initialError }: { query: string; initi
           <span className="text-[14px] text-[#858585]">Powered by Groq AI</span>
         </div>
       </div>
-      
-      {displayError && (
-        <div className="mt-6 p-4 bg-[#FEF2F2] border border-[#EF4444] rounded-lg max-w-xl mx-auto">
-          <div className="flex items-center gap-2 text-[#EF4444] mb-2">
-            <AlertCircle className="h-4 w-4" />
-            <span className="font-medium text-[14px]">Generation Issue</span>
-          </div>
-          <p className="text-[14px] text-[#EF4444]">{displayError}</p>
-          <div className="mt-4 flex gap-3 justify-center">
-            <form action="/api/save-topic" method="POST">
-              <input type="hidden" name="topic" value={query} />
-              <button type="submit" className="text-[14px] px-4 py-2 bg-[#2563EB] text-white rounded-md hover:bg-[#1d4ed8]">
-                Save for Later
-              </button>
-            </form>
-            <Link href="/suggest">
-              <button className="text-[14px] px-4 py-2 border border-[#E5E7EB] rounded-md hover:bg-[#F7F7F7]">
-                Suggest Article
-              </button>
-            </Link>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
